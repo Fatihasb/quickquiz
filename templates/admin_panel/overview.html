@@ -1,0 +1,193 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}Vue d'ensemble{% endblock %}
+{% block page_title %}<i class="fas fa-tachometer-alt" style="color:var(--blue-bright);margin-right:8px"></i>Vue d'ensemble{% endblock %}
+
+{% block content %}
+
+<!-- STAT CARDS -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">Utilisateurs inscrits</div>
+            <div class="stat-badge up">+{{ new_users_7d }} cette semaine</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-question-circle"></i></div>
+        <div>
+            <div class="stat-value">{{ total_quizzes }}</div>
+            <div class="stat-label">Quiz créés</div>
+            <div class="stat-badge up">+{{ new_quizzes_7d }} cette semaine</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-play-circle"></i></div>
+        <div>
+            <div class="stat-value">{{ total_plays }}</div>
+            <div class="stat-label">Parties jouées</div>
+            <div class="stat-badge up">+{{ new_plays_7d }} cette semaine</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-list-ol"></i></div>
+        <div>
+            <div class="stat-value">{{ total_questions }}</div>
+            <div class="stat-label">Questions au total</div>
+            <div class="stat-badge neutral">{{ published_quizzes }} quiz publiés</div>
+        </div>
+    </div>
+</div>
+
+<div class="two-col">
+    <!-- TOP QUIZ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-fire" style="color:var(--yellow-dark)"></i> Top Quiz les plus joués</div>
+            <a href="{% url 'admin_quizzes' %}" class="btn btn-outline btn-sm">Voir tout</a>
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Titre</th>
+                        <th>Parties</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quiz in top_quizzes %}
+                    <tr>
+                        <td style="font-family:'Nunito',sans-serif;font-weight:900;color:var(--text-light)">{{ forloop.counter }}</td>
+                        <td>
+                            <div style="font-weight:600">{{ quiz.title|truncatechars:30 }}</div>
+                            <div style="font-size:0.75rem;color:var(--text-light)">{{ quiz.category }}</div>
+                        </td>
+                        <td>
+                            <span style="font-family:'Nunito',sans-serif;font-weight:800;color:var(--blue-bright)">{{ quiz.play_count }}</span>
+                        </td>
+                        <td>
+                            {% if quiz.is_published %}
+                            <span class="badge badge-green">Publié</span>
+                            {% else %}
+                            <span class="badge badge-gray">Brouillon</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:2rem">Aucun quiz</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TOP JOUEURS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-trophy" style="color:var(--yellow-dark)"></i> Top Joueurs</div>
+            <a href="{% url 'admin_users' %}" class="btn btn-outline btn-sm">Voir tout</a>
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Joueur</th>
+                        <th>Score</th>
+                        <th>Parties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in top_players %}
+                    <tr>
+                        <td style="font-family:'Nunito',sans-serif;font-weight:900;color:var(--text-light)">{{ forloop.counter }}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <div class="u-avatar">{{ p.user.username.0|upper }}</div>
+                                <span style="font-weight:600">{{ p.user.username }}</span>
+                            </div>
+                        </td>
+                        <td><span style="font-family:'Nunito',sans-serif;font-weight:800;color:var(--blue-bright)">{{ p.total_score }}</span></td>
+                        <td>{{ p.quizzes_played }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:2rem">Aucun joueur</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="two-col">
+    <!-- DERNIERS INSCRITS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-plus" style="color:var(--green)"></i> Derniers inscrits</div>
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr><th>Utilisateur</th><th>Email</th><th>Inscrit le</th><th>Statut</th></tr>
+                </thead>
+                <tbody>
+                    {% for u in recent_users %}
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <div class="u-avatar">{{ u.username.0|upper }}</div>
+                                <div>
+                                    <div style="font-weight:600">{{ u.username }}</div>
+                                    {% if u.is_staff %}<span class="badge badge-blue" style="font-size:0.65rem">Staff</span>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color:var(--text-mid);font-size:0.82rem">{{ u.email|default:"-" }}</td>
+                        <td style="color:var(--text-light);font-size:0.8rem">{{ u.date_joined|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if u.is_active %}<span class="badge badge-green">Actif</span>
+                            {% else %}<span class="badge badge-red">Inactif</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:2rem">Aucun utilisateur</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- DERNIÈRES PARTIES -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-gamepad" style="color:var(--blue-bright)"></i> Dernières parties</div>
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr><th>Joueur</th><th>Quiz</th><th>Score</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in recent_plays %}
+                    <tr>
+                        <td style="font-weight:600">{{ r.user.username|default:"Anonyme" }}</td>
+                        <td style="color:var(--text-mid);font-size:0.82rem">{{ r.quiz.title|truncatechars:25 }}</td>
+                        <td>
+                            <span style="font-family:'Nunito',sans-serif;font-weight:800;color:var(--blue-bright)">{{ r.score }}</span>
+                            <span style="font-size:0.75rem;color:var(--text-light)"> pts</span>
+                        </td>
+                        <td style="color:var(--text-light);font-size:0.78rem">{{ r.played_at|date:"d/m H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:2rem">Aucune partie</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

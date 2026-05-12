@@ -1,0 +1,179 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}Statistiques{% endblock %}
+{% block page_title %}<i class="fas fa-chart-bar" style="color:var(--blue-bright);margin-right:8px"></i>Statistiques globales{% endblock %}
+
+{% block extra_css %}
+<style>
+.bar-wrap { display:flex; align-items:center; gap:10px; margin-bottom:0.7rem; }
+.bar-label { min-width:120px; font-size:0.82rem; font-weight:600; color:var(--text-mid); }
+.bar-track { flex:1; background:rgba(33,150,243,0.1); border-radius:20px; height:10px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:20px; background:linear-gradient(90deg,var(--blue-bright),var(--blue-mid)); transition:width 0.8s ease; }
+.bar-count { min-width:40px; text-align:right; font-family:'Nunito',sans-serif; font-weight:800; font-size:0.85rem; color:var(--blue-bright); }
+.chart-canvas { width:100% !important; height:200px !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- STATS GLOBALES -->
+<div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">Utilisateurs</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-play-circle"></i></div>
+        <div>
+            <div class="stat-value">{{ total_plays }}</div>
+            <div class="stat-label">Parties jouées</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-star"></i></div>
+        <div>
+            <div class="stat-value">{{ avg_score }}</div>
+            <div class="stat-label">Score moyen</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-chart-line"></i></div>
+        <div>
+            <div class="stat-value">{% if total_users > 0 %}{{ total_plays|floatformat:0 }}{% else %}0{% endif %}</div>
+            <div class="stat-label">Parties / utilisateur</div>
+        </div>
+    </div>
+</div>
+
+<div class="two-col">
+    <!-- ACTIVITÉ 7 JOURS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-chart-line" style="color:var(--blue-bright)"></i> Activité — 7 derniers jours</div>
+        </div>
+        <div class="card-body" style="padding:1.5rem">
+            <canvas id="activityChart" class="chart-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- TOP QUIZ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-fire" style="color:var(--yellow-dark)"></i> Top 10 Quiz les plus joués</div>
+        </div>
+        <div class="card-body" style="padding:1.5rem">
+            {% with max_plays=top_quizzes.0.play_count %}
+            {% for quiz in top_quizzes %}
+            <div class="bar-wrap">
+                <div class="bar-label" title="{{ quiz.title }}">{{ quiz.title|truncatechars:16 }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:{% if max_plays > 0 %}{% widthratio quiz.play_count max_plays 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+                <div class="bar-count">{{ quiz.play_count }}</div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-light);text-align:center;padding:2rem">Aucune donnée</p>
+            {% endfor %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<div class="two-col">
+    <!-- PAR CATÉGORIE -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-tags" style="color:var(--green)"></i> Quiz par catégorie</div>
+        </div>
+        <div class="card-body" style="padding:1.5rem">
+            {% with max_cat=stats_by_category.0.quiz_count %}
+            {% for cat in stats_by_category %}
+            <div class="bar-wrap">
+                <div class="bar-label">{{ cat.category }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:{% if max_cat > 0 %}{% widthratio cat.quiz_count max_cat 100 %}{% else %}0{% endif %}%;background:linear-gradient(90deg,var(--green),#2e7d32)"></div>
+                </div>
+                <div class="bar-count" style="color:var(--green)">{{ cat.quiz_count }}</div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-light);text-align:center;padding:2rem">Aucune donnée</p>
+            {% endfor %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- PAR DIFFICULTÉ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-signal" style="color:var(--yellow-dark)"></i> Répartition par difficulté</div>
+        </div>
+        <div class="card-body" style="padding:1.5rem">
+            {% for diff in stats_by_difficulty %}
+            <div style="margin-bottom:1.2rem">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                    <span style="font-weight:700;font-size:0.88rem">
+                        {% if diff.difficulty == 'easy' %}🟢 Facile
+                        {% elif diff.difficulty == 'medium' %}🟡 Moyen
+                        {% else %}🔴 Difficile{% endif %}
+                    </span>
+                    <span style="font-family:'Nunito',sans-serif;font-weight:800;font-size:0.9rem">
+                        {{ diff.quiz_count }} quiz — {{ diff.total_plays|default:0 }} parties
+                    </span>
+                </div>
+                <div class="bar-track" style="height:14px">
+                    <div class="bar-fill"
+                        style="width:{% if diff.total_plays %}{% widthratio diff.total_plays total_plays 100 %}{% else %}0{% endif %}%;
+                        background:{% if diff.difficulty == 'easy' %}linear-gradient(90deg,#4CAF50,#2e7d32){% elif diff.difficulty == 'medium' %}linear-gradient(90deg,#FFC107,#FF8F00){% else %}linear-gradient(90deg,#f44336,#c62828){% endif %}">
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-light);text-align:center;padding:2rem">Aucune donnée</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+const labels = {{ daily_labels_json|safe }};
+const data   = {{ daily_activity_json|safe }};
+
+const ctx = document.getElementById('activityChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Parties jouées',
+            data: data,
+            backgroundColor: 'rgba(33,150,243,0.2)',
+            borderColor: 'rgba(33,150,243,0.8)',
+            borderWidth: 2,
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, font: { family: 'Poppins', size: 11 } },
+                grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+                ticks: { font: { family: 'Poppins', size: 11 } },
+                grid: { display: false }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

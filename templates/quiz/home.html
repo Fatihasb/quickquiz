@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load quiz_tags %}
+{% block title %}Accueil{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── HERO ─────────────────────────────────────────────────────────── */
+.hero {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 55%, #1565c0 100%);
+    padding: 5rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    top: -40%; right: -5%;
+    width: 580px; height: 580px;
+    background: radial-gradient(circle, rgba(255,193,7,.14) 0%, transparent 70%);
+    border-radius: 50%;
+}
+.hero-content { position: relative; z-index: 1; text-align: center; color: white; }
+.hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,193,7,.18); border: 1px solid rgba(255,193,7,.4);
+    color: var(--yellow); padding: .4rem 1.2rem; border-radius: 50px;
+    font-size: .82rem; font-weight: 700; margin-bottom: 1.4rem;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.hero h1 {
+    font-family: 'Nunito', sans-serif; font-weight: 900;
+    font-size: clamp(2.3rem, 5vw, 3.8rem); line-height: 1.1; margin-bottom: 1.1rem;
+}
+.hero h1 .hl { color: var(--yellow); }
+.hero p { font-size: 1.05rem; color: rgba(255,255,255,.78); max-width: 540px; margin: 0 auto 2.4rem; line-height: 1.7; }
+.hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+.hero-stats {
+    display: flex; justify-content: center; gap: 3rem;
+    margin-top: 3.5rem; flex-wrap: wrap;
+}
+.h-stat { text-align: center; }
+.h-stat .num {
+    font-family: 'Nunito', sans-serif; font-size: 2.2rem; font-weight: 900;
+    color: var(--yellow); line-height: 1;
+}
+.h-stat .lbl { font-size: .8rem; color: rgba(255,255,255,.6); font-weight: 600; margin-top: .3rem; }
+
+/* ── FEATURES ─────────────────────────────────────────────────────── */
+.features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.4rem; margin-top: 2rem;
+}
+.feat {
+    background: white; border-radius: var(--radius); padding: 1.8rem;
+    box-shadow: var(--shadow); text-align: center; transition: all .3s;
+}
+.feat:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+.feat-icon {
+    width: 66px; height: 66px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; margin: 0 auto 1.1rem;
+}
+.fi-yellow { background: rgba(255,193,7,.15); }
+.fi-blue   { background: rgba(33,150,243,.12); }
+.fi-green  { background: rgba(67,160,71,.12); }
+.fi-red    { background: rgba(244,67,54,.12); }
+.feat h3 { font-family:'Nunito',sans-serif; font-weight:800; font-size:1.05rem; color:var(--blue-dark); margin-bottom:.4rem; }
+.feat p  { color:var(--text-light); font-size:.87rem; line-height:1.6; }
+
+/* ── QUIZ CARDS ───────────────────────────────────────────────────── */
+.section { padding: 4rem 0; }
+.sec-title  { font-family:'Nunito',sans-serif; font-size:1.8rem; font-weight:900; color:var(--blue-dark); }
+.sec-sub    { color:var(--text-light); font-size:.9rem; margin-top:.2rem; }
+.sec-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+
+.quiz-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:1.4rem; }
+.qcard     { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; transition:all .3s; }
+.qcard:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+.qcard-head {
+    padding: 1.4rem 1.5rem;
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue-dark));
+}
+.qcard-cat { display:inline-block; background:rgba(255,255,255,.2); color:rgba(255,255,255,.9); padding:.18rem .75rem; border-radius:50px; font-size:.72rem; font-weight:700; margin-bottom:.6rem; text-transform:uppercase; }
+.qcard-head h3 { font-family:'Nunito',sans-serif; font-weight:800; color:white; font-size:1.08rem; line-height:1.3; }
+.qcard-body { padding:1.1rem 1.5rem; flex:1; }
+.qmeta { display:flex; gap:1rem; font-size:.8rem; color:var(--text-light); margin-bottom:.7rem; flex-wrap:wrap; }
+.qmeta span { display:flex; align-items:center; gap:5px; }
+.qmeta i { color:var(--blue-bright); }
+.qcard-foot { padding:.9rem 1.5rem; border-top:1px solid rgba(0,0,0,.05); display:flex; align-items:center; justify-content:space-between; }
+.plays { font-size:.8rem; color:var(--text-light); font-weight:600; }
+
+/* ── LEADERBOARD MINI ─────────────────────────────────────────────── */
+.lb-mini { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.lb-mini-head { background:linear-gradient(135deg, var(--blue-dark), var(--blue-mid)); padding:1.3rem 1.5rem; font-family:'Nunito',sans-serif; font-weight:900; font-size:1.1rem; color:white; }
+.lb-row { display:flex; align-items:center; gap:.9rem; padding:.9rem 1.5rem; border-bottom:1px solid rgba(0,0,0,.05); transition:background .2s; }
+.lb-row:hover { background:rgba(33,150,243,.04); }
+.lb-rank { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.85rem; flex-shrink:0; }
+.r1 { background:linear-gradient(135deg,#FFD700,#FFA500); color:white; }
+.r2 { background:linear-gradient(135deg,#C0C0C0,#9e9e9e); color:white; }
+.r3 { background:linear-gradient(135deg,#CD7F32,#a0522d); color:white; }
+.rn { background:rgba(33,150,243,.1); color:var(--blue-mid); }
+.lb-name { flex:1; font-weight:700; font-size:.9rem; color:var(--text-dark); }
+.lb-pts  { font-family:'Nunito',sans-serif; font-weight:900; color:var(--blue-mid); font-size:1.05rem; }
+
+/* ── CTA ──────────────────────────────────────────────────────────── */
+.cta-box {
+    background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+    border-radius: var(--radius); padding: 3rem; text-align: center; color: white;
+    position: relative; overflow: hidden;
+}
+.cta-box::after { content:'⚡'; position:absolute; font-size:180px; opacity:.04; top:-30px; right:-10px; line-height:1; }
+.cta-box h2 { font-family:'Nunito',sans-serif; font-size:1.9rem; font-weight:900; margin-bottom:.6rem; }
+.cta-box p  { color:rgba(255,255,255,.75); margin-bottom:1.8rem; font-size:.97rem; }
+
+.two-col { display:grid; grid-template-columns:1fr 1.5fr; gap:2rem; align-items:start; }
+@media(max-width:900px) { .two-col { grid-template-columns:1fr; } }
+@media(max-width:768px) { .hero { padding:3rem 0 2.5rem; } .hero-stats { gap:1.5rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══ HERO ═══════════════════════════════════════════════════════════════ -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content fade-in">
+            <div class="hero-tag">⚡ Plateforme de Quiz Dynamique</div>
+            <h1>Testez vos connaissances<br>avec <span class="hl">QuickQuiz</span></h1>
+            <p>Créez, partagez et participez à des quiz thématiques. Gérez vos scores, débloquez des badges et grimpez dans le classement !</p>
+            <div class="hero-btns">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'quiz_list' %}" class="btn btn-primary btn-lg"><i class="fas fa-play"></i> Jouer maintenant</a>
+                    <a href="{% url 'quiz_create' %}" class="btn btn-outline-light btn-lg"><i class="fas fa-plus"></i> Créer un quiz</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg"><i class="fas fa-rocket"></i> Commencer gratuitement</a>
+                    <a href="{% url 'quiz_list' %}" class="btn btn-outline-light btn-lg"><i class="fas fa-search"></i> Explorer les quiz</a>
+                {% endif %}
+            </div>
+            <div class="hero-stats">
+                <div class="h-stat"><div class="num">{{ stats.total_quizzes }}</div><div class="lbl">Quiz disponibles</div></div>
+                <div class="h-stat"><div class="num">{{ stats.total_users }}</div><div class="lbl">Joueurs actifs</div></div>
+                <div class="h-stat"><div class="num">{{ stats.total_plays }}</div><div class="lbl">Parties jouées</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ FEATURES ══════════════════════════════════════════════════════════ -->
+<section class="section" style="padding-bottom:0">
+    <div class="container">
+        <div class="features-grid">
+            <div class="feat fade-in fade-in-1">
+                <div class="feat-icon fi-yellow">⚡</div>
+                <h3>Quiz dynamiques</h3>
+                <p>QCM, Vrai/Faux, Réponse courte — variez les types de questions pour un maximum d'engagement.</p>
+            </div>
+            <div class="feat fade-in fade-in-2">
+                <div class="feat-icon fi-blue"><i class="fas fa-clock" style="color:var(--blue-mid)"></i></div>
+                <h3>Contre la montre</h3>
+                <p>Répondez vite et gagnez des points bonus. Plus vous êtes rapide, plus votre score grimpe !</p>
+            </div>
+            <div class="feat fade-in fade-in-3">
+                <div class="feat-icon fi-green"><i class="fas fa-trophy" style="color:var(--green)"></i></div>
+                <h3>Classements & Badges</h3>
+                <p>Débloquez 8 badges, montez dans les classements et montrez votre niveau d'expertise.</p>
+            </div>
+            <div class="feat fade-in fade-in-4">
+                <div class="feat-icon fi-red"><i class="fas fa-users" style="color:#e53935"></i></div>
+                <h3>Créez vos quiz</h3>
+                <p>Interface de création intuitive : ajoutez autant de questions que vous voulez et partagez-les.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ QUIZ POPULAIRES ════════════════════════════════════════════════════ -->
+<section class="section">
+    <div class="container">
+        <div class="sec-header">
+            <div>
+                <div class="sec-title">🔥 Quiz populaires</div>
+                <div class="sec-sub">Les quiz les plus joués cette semaine</div>
+            </div>
+            <a href="{% url 'quiz_list' %}" class="btn btn-blue">Voir tout <i class="fas fa-arrow-right"></i></a>
+        </div>
+
+        <div class="quiz-grid">
+            {% for quiz in popular_quizzes %}
+            <div class="qcard fade-in">
+                <div class="qcard-head">
+                    <div class="qcard-cat">{{ quiz.category }}</div>
+                    <h3>{{ quiz.title }}</h3>
+                </div>
+                <div class="qcard-body">
+                    <div class="qmeta">
+                        <span><i class="fas fa-question-circle"></i> {{ quiz.question_count }} questions</span>
+                        <span><i class="fas fa-clock"></i> {{ quiz.time_limit }}s</span>
+                        <span><i class="fas fa-user"></i> {{ quiz.author.username }}</span>
+                    </div>
+                    <span class="badge {{ quiz.difficulty|difficulty_class }}">{{ quiz.difficulty|difficulty_label }}</span>
+                </div>
+                <div class="qcard-foot">
+                    <span class="plays"><i class="fas fa-play-circle"></i> {{ quiz.play_count }} parties</span>
+                    <a href="{% url 'quiz_play' quiz.id %}" class="btn btn-primary btn-sm"><i class="fas fa-play"></i> Jouer</a>
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-light)">
+                <i class="fas fa-gamepad" style="font-size:3rem; opacity:.3; display:block; margin-bottom:1rem"></i>
+                <p>Aucun quiz disponible.</p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'quiz_create' %}" class="btn btn-primary" style="margin-top:1rem"><i class="fas fa-plus"></i> Créer le premier !</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ═══ LEADERBOARD + CTA ══════════════════════════════════════════════════ -->
+<section class="section" style="padding-top:0">
+    <div class="container">
+        <div class="two-col">
+            <!-- Classement mini -->
+            <div>
+                <div class="sec-title" style="margin-bottom:.3rem">🏆 Top joueurs</div>
+                <div class="sec-sub" style="margin-bottom:1.2rem">Cette semaine</div>
+                <div class="lb-mini">
+                    <div class="lb-mini-head">🌍 Classement mondial</div>
+                    {% for p in top_players %}
+                    <div class="lb-row">
+                        <div class="lb-rank {% if forloop.counter == 1 %}r1{% elif forloop.counter == 2 %}r2{% elif forloop.counter == 3 %}r3{% else %}rn{% endif %}">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="lb-name">{{ p.user.username }}</div>
+                        <div class="lb-pts">{{ p.total_score }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="lb-row" style="justify-content:center; color:var(--text-light); font-size:.88rem">
+                        Aucun classement pour l'instant
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'leaderboard' %}" class="btn btn-blue" style="margin-top:1rem; width:100%; justify-content:center">
+                    Voir le classement complet <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- CTA -->
+            <div style="display:flex; flex-direction:column; gap:1.5rem">
+                <div class="cta-box">
+                    <h2>Prêt à relever le défi ?</h2>
+                    <p>Rejoignez des milliers de joueurs et prouvez que vous êtes le meilleur !</p>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'quiz_list' %}" class="btn btn-primary btn-lg"><i class="fas fa-play"></i> Jouer maintenant</a>
+                    {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg"><i class="fas fa-rocket"></i> Rejoindre gratuitement</a>
+                    {% endif %}
+                </div>
+                {% if user.is_authenticated %}
+                <div class="cta-box" style="background:linear-gradient(135deg, #1b5e20, var(--green))">
+                    <h2 style="font-size:1.4rem">Créez votre quiz !</h2>
+                    <p>Partagez vos connaissances avec la communauté.</p>
+                    <a href="{% url 'quiz_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Créer un quiz</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

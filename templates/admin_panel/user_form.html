@@ -1,0 +1,188 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}{{ action }} un utilisateur{% endblock %}
+{% block page_title %}
+<i class="fas fa-user-{% if action == 'Créer' %}plus{% else %}edit{% endif %}" style="color:var(--blue-bright);margin-right:8px"></i>
+{{ action }} un utilisateur
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; max-width:700px; }
+.form-section { padding:1.5rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.form-section:last-child { border-bottom:none; }
+.form-section-title {
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:0.9rem;
+    color:var(--text-dark); margin-bottom:1.2rem;
+    display:flex; align-items:center; gap:8px;
+}
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.form-row.full { grid-template-columns:1fr; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+label { font-size:0.82rem; font-weight:700; color:var(--text-mid); }
+.form-input {
+    padding:0.6rem 0.9rem;
+    border:1.5px solid rgba(30,95,170,0.2);
+    border-radius:var(--radius-sm);
+    font-size:0.875rem; font-family:'Poppins',sans-serif;
+    outline:none; transition:border-color 0.2s;
+    background:var(--bg);
+}
+.form-input:focus { border-color:var(--blue-bright); background:white; }
+.form-input.error { border-color:var(--red); }
+.error-msg { color:var(--red); font-size:0.75rem; font-weight:600; }
+.helper-text { color:var(--text-light); font-size:0.75rem; }
+.toggle-row { display:flex; align-items:center; gap:12px; margin-bottom:0.8rem; }
+.toggle-label { font-size:0.875rem; font-weight:600; color:var(--text-dark); }
+.toggle-sub { font-size:0.75rem; color:var(--text-light); }
+/* Toggle switch */
+.switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; }
+.switch input { opacity:0; width:0; height:0; }
+.slider {
+    position:absolute; cursor:pointer; inset:0;
+    background:rgba(0,0,0,0.15); border-radius:24px;
+    transition:0.3s;
+}
+.slider:before {
+    content:""; position:absolute;
+    height:18px; width:18px; left:3px; bottom:3px;
+    background:white; border-radius:50%; transition:0.3s;
+}
+input:checked + .slider { background:var(--blue-bright); }
+input:checked + .slider:before { transform:translateX(20px); }
+.form-actions {
+    padding:1.2rem 1.5rem;
+    display:flex; gap:1rem; align-items:center;
+    background:#f8faff;
+    border-top:1px solid rgba(0,0,0,0.06);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1rem">
+    <a href="{% url 'admin_users' %}" class="btn btn-outline btn-sm">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+    </a>
+</div>
+
+<form method="post" class="form-card">
+    {% csrf_token %}
+
+    <!-- INFOS PRINCIPALES -->
+    <div class="form-section">
+        <div class="form-section-title">
+            <i class="fas fa-id-card" style="color:var(--blue-bright)"></i> Informations du compte
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur *</label>
+                <input type="text" id="username" name="username"
+                    class="form-input {% if errors.username %}error{% endif %}"
+                    value="{{ form_data.username|default:'' }}"
+                    placeholder="ex: jean_dupont" required>
+                {% if errors.username %}<span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ errors.username }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="email">Adresse email</label>
+                <input type="email" id="email" name="email"
+                    class="form-input"
+                    value="{{ form_data.email|default:'' }}"
+                    placeholder="ex: jean@example.com">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="first_name">Prénom</label>
+                <input type="text" id="first_name" name="first_name"
+                    class="form-input"
+                    value="{{ form_data.first_name|default:'' }}"
+                    placeholder="Jean">
+            </div>
+            <div class="form-group">
+                <label for="last_name">Nom de famille</label>
+                <input type="text" id="last_name" name="last_name"
+                    class="form-input"
+                    value="{{ form_data.last_name|default:'' }}"
+                    placeholder="Dupont">
+            </div>
+        </div>
+    </div>
+
+    <!-- MOT DE PASSE -->
+    <div class="form-section">
+        <div class="form-section-title">
+            <i class="fas fa-lock" style="color:var(--yellow-dark)"></i>
+            Mot de passe {% if action == 'Modifier' %}<span style="font-size:0.75rem;color:var(--text-light);font-weight:400">(laisser vide pour ne pas changer)</span>{% endif %}
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="password1">{% if action == 'Créer' %}Mot de passe *{% else %}Nouveau mot de passe{% endif %}</label>
+                <input type="password" id="password1" name="password1"
+                    class="form-input {% if errors.password1 %}error{% endif %}"
+                    placeholder="Minimum 8 caractères"
+                    {% if action == 'Créer' %}required{% endif %}>
+                {% if errors.password1 %}<span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ errors.password1 }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="password2">Confirmer le mot de passe</label>
+                <input type="password" id="password2" name="password2"
+                    class="form-input {% if errors.password2 %}error{% endif %}"
+                    placeholder="Répéter le mot de passe">
+                {% if errors.password2 %}<span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ errors.password2 }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- PERMISSIONS -->
+    <div class="form-section">
+        <div class="form-section-title">
+            <i class="fas fa-shield-alt" style="color:var(--green)"></i> Permissions et statut
+        </div>
+
+        <div class="toggle-row">
+            <label class="switch">
+                <input type="checkbox" name="is_active" id="is_active"
+                    {% if form_data.is_active != False %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+            <div>
+                <div class="toggle-label">Compte actif</div>
+                <div class="toggle-sub">L'utilisateur peut se connecter</div>
+            </div>
+        </div>
+
+        {% if not target.is_superuser %}
+        <div class="toggle-row">
+            <label class="switch">
+                <input type="checkbox" name="is_staff" id="is_staff"
+                    {% if form_data.is_staff %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+            <div>
+                <div class="toggle-label">Droits Staff (Admin)</div>
+                <div class="toggle-sub">Accès au panneau d'administration</div>
+            </div>
+        </div>
+        {% else %}
+        <div style="padding:0.8rem;background:rgba(33,150,243,0.07);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--blue-mid)">
+            <i class="fas fa-info-circle"></i> Cet utilisateur est <strong>Superadmin</strong> — ses droits ne peuvent pas être modifiés ici.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> {{ action }} l'utilisateur
+        </button>
+        <a href="{% url 'admin_users' %}" class="btn btn-outline">
+            <i class="fas fa-times"></i> Annuler
+        </a>
+        {% if target %}
+        <div style="margin-left:auto;color:var(--text-light);font-size:0.78rem">
+            ID : {{ target.id }} &mdash; Inscrit le {{ target.date_joined|date:"d/m/Y" }}
+        </div>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}

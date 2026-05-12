@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% block title %}{{ quiz.title }} — Jouer{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Page de jeu : fond sombre immersif */
+body { background: linear-gradient(135deg, #0d2550 0%, #1a3a6b 50%, #0d47a1 100%) !important; min-height:100vh; }
+footer { display:none !important; }
+.navbar { background: rgba(13,37,80,.95) !important; backdrop-filter:blur(10px); }
+
+.play-wrap {
+    max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem;
+    min-height: calc(100vh - 68px); display: flex; flex-direction: column;
+}
+
+/* ── Barre de progression ── */
+.prog-wrap { background:rgba(255,255,255,.15); border-radius:50px; height:7px; margin-bottom:2rem; overflow:hidden; }
+.prog-fill  { height:100%; background:linear-gradient(90deg,var(--yellow),var(--green-bright)); border-radius:50px; transition:width .5s ease; }
+
+/* ── Header ── */
+.play-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.8rem; color:white; }
+.play-title  { font-family:'Nunito',sans-serif; font-weight:900; font-size:1.05rem; opacity:.9; }
+.live-score  {
+    background:rgba(255,193,7,.2); border:1px solid rgba(255,193,7,.4);
+    color:var(--yellow); padding:.38rem 1rem; border-radius:50px;
+    font-weight:800; font-size:.9rem; font-family:'Nunito',sans-serif;
+}
+
+/* ── Timer ── */
+.timer-wrap {
+    width:88px; height:88px; border-radius:50%;
+    background:rgba(255,255,255,.08); border:4px solid var(--yellow);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    margin:0 auto 1.8rem; transition:border-color .3s; font-family:'Nunito',sans-serif;
+}
+.timer-num   { font-size:2rem; font-weight:900; color:white; line-height:1; }
+.timer-lbl   { font-size:.62rem; color:rgba(255,255,255,.6); font-weight:600; }
+.timer-wrap.danger { border-color:#FF5722; animation:pulse .5s ease infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+/* ── Question card ── */
+.q-card {
+    background:white; border-radius:20px; padding:2.3rem;
+    box-shadow:0 24px 64px rgba(0,0,0,.3); animation:slideUp .4s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+.q-num-badge {
+    display:inline-flex; align-items:center; gap:7px;
+    background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark));
+    color:white; padding:.28rem 1rem; border-radius:50px;
+    font-size:.78rem; font-weight:700; margin-bottom:1rem;
+}
+.q-text {
+    font-family:'Nunito',sans-serif; font-size:1.35rem; font-weight:800;
+    color:var(--blue-dark); line-height:1.4; margin-bottom:1.8rem;
+}
+
+/* ── Options QCM ── */
+.opts-grid { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.opt-btn {
+    padding:.95rem 1.3rem; border:2.5px solid rgba(33,150,243,.22);
+    border-radius:var(--radius); background:rgba(33,150,243,.04);
+    cursor:pointer; font-family:'Poppins',sans-serif; font-size:.92rem;
+    font-weight:600; color:var(--text-dark); transition:all .2s;
+    text-align:left; display:flex; align-items:center; gap:10px;
+}
+.opt-letter {
+    width:30px; height:30px; border-radius:50%; background:rgba(33,150,243,.12);
+    color:var(--blue-mid); display:flex; align-items:center; justify-content:center;
+    font-size:.78rem; font-weight:800; flex-shrink:0;
+}
+.opt-btn:hover:not(:disabled) { border-color:var(--blue-bright); background:rgba(33,150,243,.1); transform:translateY(-2px); box-shadow:0 6px 20px rgba(33,150,243,.15); }
+.opt-btn.correct  { border-color:var(--green); background:rgba(67,160,71,.1); color:#2e7d32; }
+.opt-btn.correct .opt-letter { background:var(--green); color:white; }
+.opt-btn.wrong    { border-color:#f44336; background:rgba(244,67,54,.07); color:#c62828; }
+.opt-btn.wrong .opt-letter   { background:#f44336; color:white; }
+.opt-btn:disabled { cursor:not-allowed; opacity:.72; }
+
+/* ── Vrai/Faux ── */
+.tf-grid { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.tf-btn {
+    padding:1.4rem; border:2.5px solid; border-radius:var(--radius);
+    font-family:'Nunito',sans-serif; font-size:1.2rem; font-weight:900;
+    cursor:pointer; transition:all .2s; text-align:center; background:white;
+}
+.tf-true  { border-color:var(--green); color:var(--green); }
+.tf-false { border-color:#f44336; color:#e53935; }
+.tf-true:hover:not(:disabled)  { background:rgba(67,160,71,.1); transform:translateY(-2px); }
+.tf-false:hover:not(:disabled) { background:rgba(244,67,54,.08); transform:translateY(-2px); }
+
+/* ── Réponse courte ── */
+.short-input {
+    width:100%; padding:1rem 1.3rem;
+    border:2.5px solid rgba(33,150,243,.22); border-radius:var(--radius);
+    font-family:'Poppins',sans-serif; font-size:.95rem; color:var(--text-dark);
+    outline:none; transition:border .2s; margin-bottom:.8rem;
+}
+.short-input:focus { border-color:var(--blue-bright); }
+
+/* ── Feedback ── */
+.feedback { margin-top:1.3rem; padding:.9rem 1.3rem; border-radius:var(--radius-sm); display:none; animation:slideUp .3s ease; }
+.feedback.show   { display:flex; align-items:flex-start; gap:10px; }
+.feedback.ok     { background:rgba(67,160,71,.1); color:#2e7d32; border-left:4px solid var(--green); }
+.feedback.ko     { background:rgba(244,67,54,.08); color:#c62828; border-left:4px solid #f44336; }
+.feedback .expl  { font-weight:400; font-size:.86rem; margin-top:.2rem; opacity:.85; }
+
+/* ── Bouton suivant ── */
+.next-btn { width:100%; margin-top:1.3rem; justify-content:center; display:none; }
+.next-btn.show { display:flex; }
+
+/* ── Résultats ── */
+.results { display:none; text-align:center; padding:2.5rem 1rem; color:white; }
+.results.show { display:block; animation:slideUp .5s ease; }
+.result-circle {
+    width:140px; height:140px; border-radius:50%;
+    background:rgba(255,255,255,.1); border:6px solid var(--yellow);
+    margin:0 auto 2rem;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:'Nunito',sans-serif;
+}
+.result-circle .big  { font-size:3rem; font-weight:900; color:var(--yellow); line-height:1; }
+.result-circle .sub  { font-size:.88rem; opacity:.7; }
+.result-title   { font-family:'Nunito',sans-serif; font-size:2.3rem; font-weight:900; margin-bottom:.4rem; }
+.result-sub     { opacity:.78; margin-bottom:2rem; font-size:.97rem; }
+.result-stats   { display:flex; justify-content:center; gap:1.8rem; margin-bottom:2.2rem; flex-wrap:wrap; }
+.rs             { background:rgba(255,255,255,.1); border-radius:var(--radius); padding:.9rem 1.4rem; min-width:90px; }
+.rs .v          { font-family:'Nunito',sans-serif; font-size:1.8rem; font-weight:900; color:var(--yellow); }
+.rs .l          { font-size:.72rem; opacity:.7; margin-top:.2rem; }
+.result-btns    { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; }
+
+@media(max-width:600px) {
+    .opts-grid, .tf-grid { grid-template-columns:1fr; }
+    .q-text { font-size:1.15rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="play-wrap">
+
+    <!-- Barre de progression -->
+    <div class="prog-wrap">
+        <div class="prog-fill" id="progFill" style="width:0%"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="play-header">
+        <div class="play-title">⚡ {{ quiz.title }}</div>
+        <div class="live-score">⭐ <span id="liveScore">0</span> pts</div>
+    </div>
+
+    <!-- Écran de jeu -->
+    <div id="gameScreen">
+        <!-- Timer -->
+        <div class="timer-wrap" id="timerWrap">
+            <span class="timer-num" id="timerNum">{{ quiz.time_limit }}</span>
+            <span class="timer-lbl">sec</span>
+        </div>
+
+        <!-- Carte question -->
+        <div class="q-card" id="qCard">
+            <div class="q-num-badge" id="qNum">Question 1 / {{ total_questions }}</div>
+            <div class="q-text" id="qText">Chargement…</div>
+            <div id="answersZone"></div>
+            <div class="feedback" id="feedback"></div>
+            <button class="btn btn-primary btn-lg next-btn" id="nextBtn" onclick="nextQuestion()">
+                Suivant <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Écran résultats -->
+    <div class="results" id="resultsScreen">
+        <div class="result-circle">
+            <span class="big" id="finalScore">0</span>
+            <span class="sub">points</span>
+        </div>
+        <div class="result-title" id="resultTitle">🎉 Bravo !</div>
+        <div class="result-sub"  id="resultSub"></div>
+        <div class="result-stats">
+            <div class="rs"><div class="v" id="rCorrect">0</div><div class="l">Correctes</div></div>
+            <div class="rs"><div class="v" id="rWrong">0</div><div class="l">Incorrectes</div></div>
+            <div class="rs"><div class="v" id="rBonus">0</div><div class="l">Bonus temps</div></div>
+        </div>
+        <div class="result-btns">
+            <a href="{% url 'quiz_list' %}" class="btn btn-outline-light btn-lg"><i class="fas fa-list"></i> Autres quiz</a>
+            <button class="btn btn-primary btn-lg" onclick="location.reload()"><i class="fas fa-redo"></i> Rejouer</button>
+            <a href="{% url 'leaderboard' %}" class="btn btn-green btn-lg"><i class="fas fa-trophy"></i> Classement</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ── Données injectées par la View Django ────────────────────────────────────
+const QUESTIONS   = {{ quiz_json|safe }};
+const TIME_LIMIT  = {{ quiz.time_limit }};
+const QUIZ_ID     = {{ quiz.id }};
+const CSRF        = "{{ csrf_token }}";
+const SAVE_URL    = "{% url 'save_score' quiz.id %}";
+
+// ── État du jeu ─────────────────────────────────────────────────────────────
+let idx       = 0;
+let score     = 0;
+let correct   = 0;
+let wrong     = 0;
+let timeBonus = 0;
+let timer     = null;
+let timeLeft  = TIME_LIMIT;
+let answered  = false;
+
+// ── Démarre une question ─────────────────────────────────────────────────────
+function startQuestion() {
+    const q = QUESTIONS[idx];
+    answered = false;
+    timeLeft = TIME_LIMIT;
+
+    document.getElementById('progFill').style.width = (idx / QUESTIONS.length * 100) + '%';
+    document.getElementById('qNum').textContent  = `Question ${idx + 1} / ${QUESTIONS.length}`;
+    document.getElementById('qText').textContent = q.text;
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('feedback').innerHTML  = '';
+    document.getElementById('nextBtn').className  = 'btn btn-primary btn-lg next-btn';
+
+    // Reset timer
+    const tw = document.getElementById('timerWrap');
+    const tn = document.getElementById('timerNum');
+    tw.className = 'timer-wrap';
+    tn.textContent = TIME_LIMIT;
+    clearInterval(timer);
+    timer = setInterval(() => {
+        timeLeft--;
+        tn.textContent = timeLeft;
+        if (timeLeft <= 5) tw.className = 'timer-wrap danger';
+        if (timeLeft <= 0) { clearInterval(timer); if (!answered) timeOut(); }
+    }, 1000);
+
+    renderAnswers(q);
+}
+
+// ── Rendu des réponses selon le type ────────────────────────────────────────
+function renderAnswers(q) {
+    const zone = document.getElementById('answersZone');
+    zone.innerHTML = '';
+
+    if (q.type === 'mcq') {
+        const grid = document.createElement('div');
+        grid.className = 'opts-grid';
+        const letters = ['A','B','C','D'];
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerHTML = `<span class="opt-letter">${letters[i]}</span>${opt}`;
+            btn.onclick = () => answer(String(i), btn, q);
+            grid.appendChild(btn);
+        });
+        zone.appendChild(grid);
+
+    } else if (q.type === 'truefalse') {
+        const grid = document.createElement('div');
+        grid.className = 'tf-grid';
+        [['true','✅ Vrai','tf-true'], ['false','❌ Faux','tf-false']].forEach(([val, label, cls]) => {
+            const btn = document.createElement('button');
+            btn.className = `tf-btn ${cls}`;
+            btn.textContent = label;
+            btn.onclick = () => answer(val, btn, q);
+            grid.appendChild(btn);
+        });
+        zone.appendChild(grid);
+
+    } else {
+        // Réponse courte
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.className = 'short-input';
+        inp.placeholder = 'Votre réponse…'; inp.id = 'shortInp';
+        inp.onkeypress = e => { if (e.key === 'Enter') submitShort(q); };
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-blue'; btn.style = 'width:100%; justify-content:center';
+        btn.innerHTML = '<i class="fas fa-check"></i> Valider';
+        btn.onclick = () => submitShort(q);
+        zone.appendChild(inp);
+        zone.appendChild(btn);
+    }
+}
+
+// ── Traitement d'une réponse ─────────────────────────────────────────────────
+function answer(val, btn, q) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timer);
+
+    const bonus   = Math.round((timeLeft / TIME_LIMIT) * 50);
+    const isOk    = String(val) === String(q.correct_answer);
+    const pts     = isOk ? 100 + bonus : 0;
+
+    if (isOk) { correct++; timeBonus += bonus; score += pts; }
+    else       { wrong++; }
+
+    // Coloration des boutons
+    if (q.type === 'mcq') {
+        btn.parentNode.querySelectorAll('.opt-btn').forEach((b, i) => {
+            b.disabled = true;
+            if (String(i) === String(q.correct_answer)) b.classList.add('correct');
+            else if (b === btn && !isOk)               b.classList.add('wrong');
+        });
+    } else if (q.type === 'truefalse') {
+        btn.parentNode.querySelectorAll('.tf-btn').forEach(b => {
+            b.disabled = true;
+            const bVal = b.textContent.includes('Vrai') ? 'true' : 'false';
+            if (bVal === q.correct_answer)  b.classList.add('correct');
+            else if (b === btn && !isOk)    b.classList.add('wrong');
+        });
+    }
+
+    // MAJ score live
+    document.getElementById('liveScore').textContent = score;
+
+    // Feedback
+    const fb = document.getElementById('feedback');
+    fb.className = `feedback show ${isOk ? 'ok' : 'ko'}`;
+    fb.innerHTML = isOk
+        ? `<div><strong>✅ +${pts} pts !</strong>${bonus > 0 ? ` <small>(+${bonus} bonus temps)</small>` : ''}</div>`
+        : `<div><strong>❌ Incorrect.</strong>${q.explanation ? `<div class="expl">💡 ${q.explanation}</div>` : ''}</div>`;
+
+    document.getElementById('nextBtn').className = 'btn btn-primary btn-lg next-btn show';
+}
+
+// ── Réponse courte ───────────────────────────────────────────────────────────
+function submitShort(q) {
+    const val = (document.getElementById('shortInp')?.value || '').trim().toLowerCase();
+    const accepted = [q.correct_answer, ...(q.accepted_answers || [])].map(a => a.toLowerCase());
+    const isOk = accepted.includes(val);
+    // Désactiver input
+    const inp = document.getElementById('shortInp');
+    if (inp) inp.disabled = true;
+    answered = true;
+    clearInterval(timer);
+    const bonus = Math.round((timeLeft / TIME_LIMIT) * 50);
+    const pts   = isOk ? 100 + bonus : 0;
+    if (isOk) { correct++; timeBonus += bonus; score += pts; }
+    else       { wrong++; }
+    document.getElementById('liveScore').textContent = score;
+    const fb = document.getElementById('feedback');
+    fb.className = `feedback show ${isOk ? 'ok' : 'ko'}`;
+    fb.innerHTML = isOk
+        ? `<div><strong>✅ +${pts} pts !</strong></div>`
+        : `<div><strong>❌ La bonne réponse était : "${q.correct_answer}"</strong>${q.explanation ? `<div class="expl">💡 ${q.explanation}</div>` : ''}</div>`;
+    document.getElementById('nextBtn').className = 'btn btn-primary btn-lg next-btn show';
+}
+
+// ── Temps écoulé ─────────────────────────────────────────────────────────────
+function timeOut() {
+    answered = true; wrong++;
+    document.getElementById('answersZone').querySelectorAll('button, input').forEach(b => b.disabled = true);
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback show ko';
+    const q = QUESTIONS[idx];
+    fb.innerHTML = `<div><strong>⏱️ Temps écoulé !</strong>${q.explanation ? `<div class="expl">💡 ${q.explanation}</div>` : ''}</div>`;
+    document.getElementById('nextBtn').className = 'btn btn-primary btn-lg next-btn show';
+}
+
+// ── Question suivante ────────────────────────────────────────────────────────
+function nextQuestion() {
+    idx++;
+    if (idx >= QUESTIONS.length) { endGame(); return; }
+    // Recharge l'animation
+    const card = document.getElementById('qCard');
+    card.style.animation = 'none'; card.offsetHeight; card.style.animation = '';
+    startQuestion();
+}
+
+// ── Fin de partie ────────────────────────────────────────────────────────────
+function endGame() {
+    clearInterval(timer);
+    document.getElementById('progFill').style.width = '100%';
+    document.getElementById('gameScreen').style.display = 'none';
+
+    const pct = Math.round(correct / QUESTIONS.length * 100);
+    let title, sub;
+    if (pct >= 90)      { title='🏆 Excellent !';    sub='Vous êtes un vrai champion !'; }
+    else if (pct >= 70) { title='🎉 Très bien !';    sub='Belle performance, continuez !'; }
+    else if (pct >= 50) { title='👍 Pas mal !';      sub='Encore un peu d\'entraînement !'; }
+    else                { title='💪 Courage !';      sub='Réessayez pour vous améliorer !'; }
+
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('rCorrect').textContent   = correct;
+    document.getElementById('rWrong').textContent     = wrong;
+    document.getElementById('rBonus').textContent     = timeBonus;
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSub').textContent   = `${pct}% de bonnes réponses — ${sub}`;
+    document.getElementById('resultsScreen').className = 'results show';
+
+    // Sauvegarde AJAX → View Django SaveScoreView
+    fetch(SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ score, correct, wrong, time_bonus: timeBonus })
+    }).catch(() => {});
+}
+
+// ── Lancement ────────────────────────────────────────────────────────────────
+startQuestion();
+</script>
+{% endblock %}

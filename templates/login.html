@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Connexion - QuickQuiz{% endblock %}
+{% block extra_css %}
+<style>
+.auth-wrap {
+    min-height: calc(100vh - 68px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #0d2550 0%, #1a3a6b 50%, #0d47a1 100%);
+}
+.auth-card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    padding: 3rem;
+    width: 100%;
+    max-width: 440px;
+    animation: fadeInUp 0.4s ease;
+}
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.auth-logo { text-align:center; margin-bottom:2rem; }
+.auth-logo .logo-icon {
+    width:70px;height:70px;background:linear-gradient(135deg,var(--yellow),var(--yellow-dark));
+    border-radius:18px;display:flex;align-items:center;justify-content:center;
+    font-size:2rem;margin:0 auto 0.75rem;box-shadow:0 8px 24px rgba(255,193,7,0.4);
+}
+.auth-logo h1 { font-family:'Nunito',sans-serif;font-weight:900;font-size:1.8rem;color:var(--blue-dark); }
+.auth-logo h1 span { color:var(--yellow-dark); }
+.auth-logo p { color:var(--text-light);font-size:0.9rem;margin-top:0.25rem; }
+
+.form-group { margin-bottom:1.2rem; }
+.form-group label { display:block;font-size:0.82rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.4rem; }
+.input-wrapper { position:relative; }
+.input-wrapper i { position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--text-light);font-size:0.9rem; }
+.form-control {
+    width:100%;padding:0.8rem 1rem 0.8rem 2.8rem;
+    border:2px solid rgba(33,150,243,0.2);border-radius:var(--radius-sm);
+    font-family:'Poppins',sans-serif;font-size:0.92rem;color:var(--text-dark);
+    outline:none;transition:border 0.2s,box-shadow 0.2s;background:#f8fbff;
+}
+.form-control:focus { border-color:var(--blue-bright);box-shadow:0 0 0 4px rgba(33,150,243,0.1);background:white; }
+.auth-footer { text-align:center;margin-top:1.5rem;color:var(--text-light);font-size:0.88rem; }
+.auth-footer a { color:var(--blue-mid);font-weight:700;text-decoration:none; }
+.auth-footer a:hover { color:var(--blue-dark); }
+.divider { display:flex;align-items:center;gap:0.75rem;margin:1.2rem 0; }
+.divider::before,.divider::after { content:'';flex:1;height:1px;background:rgba(0,0,0,0.1); }
+.divider span { font-size:0.78rem;color:var(--text-light);font-weight:600; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="logo-icon">⚡</div>
+            <h1>Quick<span>Quiz</span></h1>
+            <p>Bienvenue ! Connectez-vous pour jouer.</p>
+        </div>
+        {% if form.errors %}
+        <div class="alert alert-error">Identifiants incorrects. Réessayez.</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Nom d'utilisateur</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" class="form-control" placeholder="Votre pseudo" required autofocus>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" class="form-control" placeholder="Votre mot de passe" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-top:0.5rem">
+                <i class="fas fa-sign-in-alt"></i> Se connecter
+            </button>
+        </form>
+        <div class="divider"><span>Pas encore de compte ?</span></div>
+        <div class="auth-footer">
+            <a href="/register/" class="btn btn-blue" style="width:100%;justify-content:center">
+                <i class="fas fa-user-plus"></i> Créer un compte
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

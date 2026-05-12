@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load quiz_tags %}
+{% block title %}Mon Profil{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-hero { background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid)); padding:3rem 0 2rem; color:white; margin-bottom:2rem; }
+.profile-top  { display:flex; align-items:center; gap:2rem; flex-wrap:wrap; }
+.p-avatar     { width:88px; height:88px; border-radius:50%; background:linear-gradient(135deg,var(--yellow),var(--yellow-dark)); display:flex; align-items:center; justify-content:center; font-size:2.5rem; font-weight:900; color:var(--blue-dark); font-family:'Nunito',sans-serif; box-shadow:0 8px 24px rgba(255,193,7,.4); flex-shrink:0; }
+.p-name       { font-family:'Nunito',sans-serif; font-weight:900; font-size:1.9rem; }
+.p-sub        { color:rgba(255,255,255,.72); font-size:.88rem; margin-top:.2rem; }
+.p-stats      { display:flex; gap:2rem; margin-top:1.3rem; flex-wrap:wrap; }
+.ps           { text-align:center; }
+.ps .v        { font-family:'Nunito',sans-serif; font-size:1.7rem; font-weight:900; color:var(--yellow); }
+.ps .l        { font-size:.76rem; color:rgba(255,255,255,.6); font-weight:600; margin-top:.2rem; }
+
+.tabs      { display:flex; gap:.5rem; border-bottom:2px solid rgba(33,150,243,.14); margin-bottom:2rem; }
+.tab-btn   { padding:.65rem 1.4rem; border:none; background:transparent; cursor:pointer; font-family:'Poppins',sans-serif; font-weight:700; color:var(--text-light); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; font-size:.88rem; }
+.tab-btn.active { color:var(--blue-mid); border-bottom-color:var(--blue-mid); }
+.tab-btn:hover:not(.active) { color:var(--text-dark); }
+.tab-pane   { display:none; }
+.tab-pane.active { display:block; animation:fadeInUp .35s ease; }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+.hist-table  { width:100%; border-collapse:collapse; }
+.hist-table th { padding:.7rem 1rem; font-size:.73rem; font-weight:700; color:var(--text-light); text-transform:uppercase; border-bottom:2px solid rgba(33,150,243,.12); text-align:left; }
+.hist-table td { padding:.9rem 1rem; border-bottom:1px solid rgba(0,0,0,.05); font-size:.88rem; }
+.hist-table tr:hover td { background:rgba(33,150,243,.03); }
+
+.badge-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(115px,1fr)); gap:1rem; }
+.badge-item { background:white; border-radius:var(--radius); padding:1.4rem 1rem; text-align:center; box-shadow:var(--shadow); transition:all .25s; }
+.badge-item:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.badge-item.locked { opacity:.4; filter:grayscale(1); }
+.badge-ico  { font-size:2.3rem; margin-bottom:.5rem; }
+.badge-name { font-weight:700; font-size:.8rem; color:var(--blue-dark); }
+.badge-desc { font-size:.7rem; color:var(--text-light); margin-top:.2rem; line-height:1.3; }
+
+.my-quiz-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:1.3rem; }
+.mq-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:1.5rem; transition:all .25s; }
+.mq-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.mq-title { font-family:'Nunito',sans-serif; font-weight:800; color:var(--blue-dark); margin-bottom:.5rem; }
+.mq-meta  { font-size:.8rem; color:var(--text-light); margin-bottom:1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-hero">
+    <div class="container">
+        <div class="profile-top">
+            <div class="p-avatar">{{ user.username.0|upper }}</div>
+            <div style="flex:1">
+                <div class="p-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="p-sub">@{{ user.username }} &bull; Membre depuis {{ user.date_joined|date:"F Y" }}</div>
+                {% with profile.level as lvl %}
+                <span class="badge badge-{{ lvl.2 }}" style="margin-top:.5rem">{{ lvl.1 }} {{ lvl.0 }}</span>
+                {% endwith %}
+                <div class="p-stats">
+                    <div class="ps"><div class="v">{{ profile.total_score }}</div><div class="l">Score total</div></div>
+                    <div class="ps"><div class="v">{{ profile.quizzes_played }}</div><div class="l">Quiz joués</div></div>
+                    <div class="ps"><div class="v">{{ my_quizzes.count }}</div><div class="l">Quiz créés</div></div>
+                    <div class="ps"><div class="v">{{ profile.best_score }}</div><div class="l">Meilleur score</div></div>
+                </div>
+            </div>
+            <a href="{% url 'quiz_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Créer un quiz</a>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-4">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('history', this)"><i class="fas fa-history"></i> Historique</button>
+        <button class="tab-btn" onclick="showTab('myquizzes', this)"><i class="fas fa-list"></i> Mes Quiz</button>
+        <button class="tab-btn" onclick="showTab('badges', this)"><i class="fas fa-medal"></i> Badges ({{ profile.badges_earned|length }}/8)</button>
+    </div>
+
+    <!-- Historique -->
+    <div class="tab-pane active" id="tab-history">
+        <div class="card" style="overflow:auto">
+            <table class="hist-table">
+                <thead><tr>
+                    <th>Quiz</th><th>Score</th><th>Résultat</th><th>Bonus temps</th><th>Date</th><th></th>
+                </tr></thead>
+                <tbody>
+                {% for r in history %}
+                <tr>
+                    <td><strong>{{ r.quiz.title }}</strong><br><span style="color:var(--text-light);font-size:.78rem">{{ r.quiz.category }}</span></td>
+                    <td>
+                        <span class="badge {% if r.percentage >= 70 %}badge-green{% elif r.percentage >= 40 %}badge-yellow{% else %}badge-red{% endif %}">
+                            {{ r.score }} pts
+                        </span>
+                    </td>
+                    <td>{{ r.correct }}/{{ r.quiz.question_count }} ✓ ({{ r.percentage }}%)</td>
+                    <td style="color:var(--yellow-dark); font-weight:700">+{{ r.time_bonus }}</td>
+                    <td style="color:var(--text-light)">{{ r.played_at|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'quiz_play' r.quiz.id %}" class="btn btn-primary btn-sm"><i class="fas fa-redo"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center py-5" style="color:var(--text-light)">
+                    Aucune partie jouée. <a href="{% url 'quiz_list' %}" style="color:var(--blue-mid);font-weight:700">Jouer maintenant !</a>
+                </td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mes quiz -->
+    <div class="tab-pane" id="tab-myquizzes">
+        <div class="my-quiz-grid">
+            {% for q in my_quizzes %}
+            <div class="mq-card">
+                <div class="mq-title">{{ q.title }}</div>
+                <div class="mq-meta">
+                    {{ q.category }} &bull; {{ q.question_count }} questions &bull; {{ q.play_count }} parties
+                </div>
+                <span class="badge {{ q.difficulty|difficulty_class }}">{{ q.difficulty|difficulty_label }}</span>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{% url 'quiz_edit' q.id %}" class="btn btn-blue btn-sm"><i class="fas fa-edit"></i> Modifier</a>
+                    <a href="{% url 'quiz_play' q.id %}" class="btn btn-primary btn-sm"><i class="fas fa-play"></i></a>
+                    <a href="{% url 'quiz_detail' q.id %}" class="btn btn-sm" style="background:rgba(33,150,243,.1);color:var(--blue-mid)"><i class="fas fa-chart-bar"></i></a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5" style="grid-column:1/-1;color:var(--text-light)">
+                Vous n'avez pas encore créé de quiz.
+                <br><a href="{% url 'quiz_create' %}" class="btn btn-primary mt-3"><i class="fas fa-plus"></i> Créer mon premier quiz</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="tab-pane" id="tab-badges">
+        <div class="badge-grid">
+            {% for b in badges %}
+            <div class="badge-item {% if not b.earned %}locked{% endif %}">
+                <div class="badge-ico">{{ b.icon }}</div>
+                <div class="badge-name">{{ b.name }}</div>
+                <div class="badge-desc">{{ b.desc }}</div>
+                {% if b.earned %}<div style="font-size:.7rem;color:var(--green);font-weight:700;margin-top:.3rem">✅ Débloqué</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+{% endblock %}

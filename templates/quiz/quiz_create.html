@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load quiz_tags %}
+{% block title %}{{ action }} un quiz{% endblock %}
+
+{% block extra_css %}
+<style>
+.q-block {
+    background:#f8fbff; border:2px solid rgba(33,150,243,.14);
+    border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem;
+    position:relative; transition:border .2s;
+}
+.q-block:hover { border-color:rgba(33,150,243,.32); }
+.q-block-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.1rem; }
+.q-block-label {
+    font-family:'Nunito',sans-serif; font-weight:800; color:var(--blue-mid); font-size:.97rem;
+    display:flex; align-items:center; gap:8px;
+}
+.q-badge {
+    width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark));
+    color:white; display:flex; align-items:center; justify-content:center;
+    font-size:.78rem; font-weight:800;
+}
+.del-btn {
+    width:32px; height:32px; border-radius:50%; border:none; cursor:pointer;
+    background:rgba(244,67,54,.1); color:#e53935;
+    display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.del-btn:hover { background:#f44336; color:white; }
+
+.opts-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+.opt-row { display:flex; align-items:center; gap:.5rem; }
+.opt-ltr {
+    width:28px; height:28px; border-radius:50%; background:rgba(33,150,243,.12);
+    color:var(--blue-mid); display:flex; align-items:center; justify-content:center;
+    font-size:.78rem; font-weight:800; flex-shrink:0;
+}
+.opt-inp {
+    flex:1; padding:.55rem .85rem; border:2px solid rgba(33,150,243,.15);
+    border-radius:8px; font-family:'Poppins',sans-serif; font-size:.87rem;
+    outline:none; background:white; transition:border .2s;
+}
+.opt-inp:focus { border-color:var(--blue-bright); }
+
+.add-q-btn {
+    width:100%; padding:.95rem;
+    border:2.5px dashed rgba(33,150,243,.32); border-radius:var(--radius);
+    background:rgba(33,150,243,.04); color:var(--blue-mid); font-weight:700;
+    cursor:pointer; font-family:'Poppins',sans-serif; font-size:.92rem;
+    transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.add-q-btn:hover { border-color:var(--blue-bright); background:rgba(33,150,243,.1); transform:translateY(-1px); }
+
+.card-title-custom {
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:1.1rem; color:var(--blue-dark);
+    padding-bottom:.7rem; border-bottom:2px solid rgba(33,150,243,.12); margin-bottom:1.5rem;
+    display:flex; align-items:center; gap:.5rem;
+}
+
+@media(max-width:768px) {
+    .form-row-2  { grid-template-columns:1fr !important; }
+    .opts-grid-2 { grid-template-columns:1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-{% if action == 'Modifier' %}edit{% else %}plus-circle{% endif %}"></i> {{ action }} un quiz</h1>
+        <p>{% if action == 'Modifier' %}Modifiez les informations et les questions de votre quiz.{% else %}Partagez vos connaissances avec la communauté QuickQuiz.{% endif %}</p>
+    </div>
+</div>
+
+<div class="container pb-4">
+<form method="post" action="" id="quizForm">
+    {% csrf_token %}
+
+    <!-- Informations générales -->
+    <div class="card mb-4 fade-in">
+        <div class="card-body p-4">
+            <div class="card-title-custom">
+                <i class="fas fa-info-circle" style="color:var(--blue-bright)"></i> Informations générales
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                Veuillez corriger les erreurs ci-dessous.
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label">Titre du quiz *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div class="form-error">{{ form.title.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Catégorie *</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Difficulté *</label>
+                    {{ form.difficulty }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Temps par question (secondes) *</label>
+                    {{ form.time_limit }}
+                    {% if form.time_limit.errors %}<div class="form-error">{{ form.time_limit.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 d-flex align-items-center gap-2 pt-2">
+                    {{ form.random_order }}
+                    <label class="form-label mb-0" style="text-transform:none; font-size:.9rem">Ordre aléatoire des questions</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions -->
+    <div class="card mb-4 fade-in fade-in-1">
+        <div class="card-body p-4">
+            <div class="card-title-custom">
+                <i class="fas fa-question-circle" style="color:var(--blue-bright)"></i>
+                Questions
+                <span id="qCount" style="background:rgba(33,150,243,.12);color:var(--blue-mid);padding:.1rem .65rem;border-radius:50px;font-size:.78rem;margin-left:.5rem">0</span>
+            </div>
+
+            <div id="qContainer"></div>
+
+            <button type="button" class="add-q-btn" onclick="addQuestion()">
+                <i class="fas fa-plus-circle"></i> Ajouter une question
+            </button>
+        </div>
+    </div>
+
+    <!-- Barre de sauvegarde -->
+    <div class="card mb-4 fade-in fade-in-2">
+        <div class="card-body px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <span style="color:var(--text-light); font-size:.85rem"><i class="fas fa-info-circle"></i> Minimum 2 questions requises</span>
+            <div class="d-flex gap-2">
+                <a href="{% url 'quiz_list' %}" class="btn btn-sm" style="background:rgba(33,150,243,.08); color:var(--blue-mid)">
+                    <i class="fas fa-times"></i> Annuler
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> {{ action }} le quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+</form>
+</div>
+
+<script>
+let qIdx = 0;
+
+const EXISTING = {% if existing_questions %}{{ existing_questions|safe }}{% else %}null{% endif %};
+
+function addQuestion(data = null) {
+    const container = document.getElementById('qContainer');
+    const n = container.children.length + 1;
+    const i = qIdx++;
+
+    const div = document.createElement('div');
+    div.className = 'q-block fade-in';
+    div.id = `qb_${i}`;
+    div.innerHTML = `
+        <div class="q-block-top">
+            <div class="q-block-label">
+                <div class="q-badge" id="qbNum_${i}">${n}</div>
+                Question ${n}
+            </div>
+            <button type="button" class="del-btn" onclick="removeQ('qb_${i}')"><i class="fas fa-trash"></i></button>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <label class="form-label">Énoncé *</label>
+                <textarea name="questions[${i}][text]" class="form-control" rows="2" placeholder="Écrivez votre question…" required>${data ? data.text : ''}</textarea>
+            </div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Type de question</label>
+                <select name="questions[${i}][type]" class="form-select" id="qtype_${i}" onchange="renderFields(${i})">
+                    <option value="mcq"       ${data && data.type==='mcq'       ? 'selected':''}>QCM (4 choix)</option>
+                    <option value="truefalse" ${data && data.type==='truefalse' ? 'selected':''}>Vrai / Faux</option>
+                    <option value="short"     ${data && data.type==='short'     ? 'selected':''}>Réponse courte</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Points</label>
+                <input type="number" name="questions[${i}][points]" class="form-control" value="${data ? data.points : 100}" min="10" max="500">
+            </div>
+        </div>
+        <div id="qfields_${i}"></div>
+        <div class="mt-3">
+            <label class="form-label">Explication (optionnel)</label>
+            <input type="text" name="questions[${i}][explanation]" class="form-control" placeholder="Expliquez la bonne réponse…" value="${data ? (data.explanation||'') : ''}">
+        </div>
+    `;
+    container.appendChild(div);
+    renderFields(i, data);
+    updateCount();
+}
+
+function renderFields(i, data = null) {
+    const type = document.getElementById(`qtype_${i}`).value;
+    const zone = document.getElementById(`qfields_${i}`);
+
+    if (type === 'mcq') {
+        const opts  = data ? (data.options || ['','','','']) : ['','','',''];
+        const corr  = data ? data.correct_answer : '0';
+        zone.innerHTML = `
+            <label class="form-label">Options et bonne réponse *</label>
+            <div class="opts-grid-2">
+                ${['A','B','C','D'].map((l,k)=>`
+                <div class="opt-row">
+                    <div class="opt-ltr">${l}</div>
+                    <input type="text" name="questions[${i}][options][]" class="opt-inp" placeholder="Option ${l}…" required value="${opts[k]||''}">
+                    <input type="radio" name="questions[${i}][correct]" value="${k}" title="Bonne réponse" style="accent-color:var(--green);margin-left:4px" ${String(corr)===String(k)?'checked':''} required>
+                </div>`).join('')}
+            </div>
+            <div style="font-size:.75rem;color:var(--text-light);margin-top:.4rem"><i class="fas fa-info-circle"></i> Cochez le bouton radio pour la bonne réponse</div>`;
+
+    } else if (type === 'truefalse') {
+        const corr = data ? data.correct_answer : 'true';
+        zone.innerHTML = `
+            <label class="form-label">Bonne réponse *</label>
+            <div style="display:flex;gap:1rem">
+                <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;padding:.65rem 1.3rem;border:2px solid rgba(67,160,71,.4);border-radius:10px">
+                    <input type="radio" name="questions[${i}][correct]" value="true"  ${corr==='true' ?'checked':''} required> ✅ Vrai
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;padding:.65rem 1.3rem;border:2px solid rgba(244,67,54,.4);border-radius:10px">
+                    <input type="radio" name="questions[${i}][correct]" value="false" ${corr==='false'?'checked':''}> ❌ Faux
+                </label>
+            </div>`;
+
+    } else {
+        const corr = data ? data.correct_answer : '';
+        zone.innerHTML = `
+            <div class="mt-2">
+                <label class="form-label">Réponse attendue *</label>
+                <input type="text" name="questions[${i}][correct]" class="form-control" placeholder="La bonne réponse…" required value="${corr}">
+            </div>`;
+    }
+}
+
+function removeQ(id) {
+    document.getElementById(id).remove();
+    updateCount();
+    renumber();
+}
+
+function updateCount() {
+    document.getElementById('qCount').textContent = document.getElementById('qContainer').children.length;
+}
+
+function renumber() {
+    document.querySelectorAll('.q-block').forEach((b, k) => {
+        b.querySelector('.q-badge').textContent = k + 1;
+    });
+}
+
+if (EXISTING && EXISTING.length > 0) {
+    EXISTING.forEach(q => addQuestion(q));
+} else {
+    addQuestion(); addQuestion();
+}
+
+document.querySelectorAll('input[type=text], input[type=number], select, textarea').forEach(el => {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select') && !el.classList.contains('opt-inp') && el.type !== 'radio' && el.type !== 'checkbox') {
+        el.classList.add('form-control');
+    }
+    if (el.tagName === 'SELECT' && !el.classList.contains('form-select')) {
+        el.classList.remove('form-control');
+        el.classList.add('form-select');
+    }
+});
+</script>
+{% endblock %}

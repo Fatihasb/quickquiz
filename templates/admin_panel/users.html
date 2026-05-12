@@ -1,0 +1,177 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}Gestion des utilisateurs{% endblock %}
+{% block page_title %}<i class="fas fa-users" style="color:var(--blue-bright);margin-right:8px"></i>Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+
+<!-- STATS RAPIDES -->
+<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.5rem">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">Total utilisateurs</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+        <div>
+            <div class="stat-value">{{ active_users }}</div>
+            <div class="stat-label">Actifs</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fas fa-user-times"></i></div>
+        <div>
+            <div class="stat-value">{{ inactive_users }}</div>
+            <div class="stat-label">Désactivés</div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTION PRINCIPALE -->
+<div style="margin-bottom:1rem;display:flex;justify-content:flex-end">
+    <a href="{% url 'admin_user_create' %}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Nouvel utilisateur
+    </a>
+</div>
+
+<!-- FILTRES -->
+<form method="get" class="filter-bar">
+    <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" class="search-input" placeholder="Rechercher un utilisateur..." value="{{ search }}">
+    </div>
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+        <option value="">Tous les statuts</option>
+        <option value="active" {% if filter_status == 'active' %}selected{% endif %}>Actifs</option>
+        <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactifs</option>
+        <option value="staff" {% if filter_status == 'staff' %}selected{% endif %}>Staff</option>
+    </select>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Rechercher</button>
+    {% if search or filter_status %}
+    <a href="{% url 'admin_users' %}" class="btn btn-outline"><i class="fas fa-times"></i> Effacer</a>
+    {% endif %}
+</form>
+
+<!-- TABLE UTILISATEURS -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-list"></i> Liste des utilisateurs ({{ users.count }})</div>
+    </div>
+    <div class="card-body">
+        <table>
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Inscription</th>
+                    <th>Quiz créés</th>
+                    <th>Parties</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div class="u-avatar">{{ u.username.0|upper }}</div>
+                            <div>
+                                <div style="font-weight:700">{{ u.username }}</div>
+                                {% if u.is_superuser %}<span class="badge badge-blue" style="font-size:0.65rem">Superadmin</span>{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color:var(--text-mid);font-size:0.82rem">{{ u.email|default:"—" }}</td>
+                    <td style="color:var(--text-light);font-size:0.8rem">{{ u.date_joined|date:"d/m/Y" }}</td>
+                    <td>
+                        <span style="font-family:'Nunito',sans-serif;font-weight:800;color:var(--blue-bright)">{{ u.quiz_count }}</span>
+                    </td>
+                    <td>
+                        <span style="font-family:'Nunito',sans-serif;font-weight:800">{{ u.play_count_total }}</span>
+                    </td>
+                    <td>
+                        {% if u.is_staff or u.is_superuser %}
+                        <span class="badge badge-blue">Staff</span>
+                        {% else %}
+                        <span class="badge badge-gray">Membre</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                        <span class="badge badge-green"><i class="fas fa-circle" style="font-size:0.5rem"></i> Actif</span>
+                        {% else %}
+                        <span class="badge badge-red"><i class="fas fa-circle" style="font-size:0.5rem"></i> Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                            <!-- Modifier -->
+                            <a href="{% url 'admin_user_edit' u.id %}" class="btn btn-sm btn-primary" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if u != request.user %}
+                            <!-- Toggle actif/inactif -->
+                            <button class="btn btn-sm {% if u.is_active %}btn-warning{% else %}btn-success{% endif %}"
+                                onclick="confirmAction(
+                                    '{% if u.is_active %}Désactiver{% else %}Activer{% endif %} l\'utilisateur',
+                                    '{{ u.username }}',
+                                    '{% url 'admin_user_toggle' u.id %}',
+                                    '{% if u.is_active %}btn-warning{% else %}btn-success{% endif %}',
+                                    '{% if u.is_active %}Désactiver{% else %}Activer{% endif %}',
+                                    '{% if u.is_active %}🔒{% else %}✅{% endif %}'
+                                )">
+                                {% if u.is_active %}<i class="fas fa-ban"></i>{% else %}<i class="fas fa-check"></i>{% endif %}
+                            </button>
+
+                            <!-- Toggle staff -->
+                            {% if not u.is_superuser %}
+                            <button class="btn btn-sm btn-outline"
+                                onclick="confirmAction(
+                                    '{% if u.is_staff %}Retirer staff{% else %}Passer staff{% endif %}',
+                                    '{{ u.username }}',
+                                    '{% url 'admin_user_make_staff' u.id %}',
+                                    '{% if u.is_staff %}btn-warning{% else %}btn-primary{% endif %}',
+                                    'Confirmer',
+                                    '🔑'
+                                )"
+                                title="{% if u.is_staff %}Retirer droits staff{% else %}Accorder droits staff{% endif %}">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- Supprimer -->
+                            <button class="btn btn-sm btn-danger"
+                                onclick="confirmAction(
+                                    'Supprimer l\'utilisateur',
+                                    '{{ u.username }}',
+                                    '{% url 'admin_user_delete' u.id %}',
+                                    'btn-danger',
+                                    'Supprimer',
+                                    '🗑️'
+                                )">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <span style="color:var(--text-light);font-size:0.78rem;font-style:italic">Vous</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center;color:var(--text-light);padding:3rem">
+                        <i class="fas fa-users" style="font-size:2rem;margin-bottom:0.5rem;display:block"></i>
+                        Aucun utilisateur trouvé
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

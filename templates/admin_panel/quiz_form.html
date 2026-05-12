@@ -1,0 +1,401 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}{{ action }} un quiz{% endblock %}
+{% block page_title %}
+<i class="fas fa-{% if action == 'Créer' %}plus-circle{% else %}edit{% endif %}" style="color:var(--blue-bright);margin-right:8px"></i>
+{{ action }} un quiz
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.form-section { padding:1.5rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.form-section:last-child { border-bottom:none; }
+.form-section-title {
+    font-family:'Nunito',sans-serif; font-weight:800; font-size:0.95rem;
+    color:var(--text-dark); margin-bottom:1.2rem;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.form-row.full { grid-template-columns:1fr; }
+.form-row.three { grid-template-columns:1fr 1fr 1fr; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+label { font-size:0.82rem; font-weight:700; color:var(--text-mid); }
+.form-input, .form-select, .form-textarea {
+    padding:0.6rem 0.9rem;
+    border:1.5px solid rgba(30,95,170,0.2);
+    border-radius:var(--radius-sm);
+    font-size:0.875rem; font-family:'Poppins',sans-serif;
+    outline:none; transition:border-color 0.2s;
+    background:var(--bg); width:100%;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--blue-bright); background:white; }
+.form-input.error, .form-select.error { border-color:var(--red); }
+.form-textarea { resize:vertical; min-height:80px; }
+.error-msg { color:var(--red); font-size:0.75rem; font-weight:600; }
+
+/* Toggle */
+.toggle-row { display:flex; align-items:center; gap:12px; margin-bottom:0.8rem; }
+.toggle-label { font-size:0.875rem; font-weight:600; color:var(--text-dark); }
+.toggle-sub { font-size:0.75rem; color:var(--text-light); }
+.switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; }
+.switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; cursor:pointer; inset:0; background:rgba(0,0,0,0.15); border-radius:24px; transition:0.3s; }
+.slider:before { content:""; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.3s; }
+input:checked + .slider { background:var(--blue-bright); }
+input:checked + .slider:before { transform:translateX(20px); }
+
+/* Questions */
+.question-card {
+    background:#f8faff;
+    border:1.5px solid rgba(30,95,170,0.12);
+    border-radius:var(--radius-sm);
+    padding:1.2rem;
+    margin-bottom:1rem;
+    position:relative;
+    transition:border-color 0.2s;
+}
+.question-card:hover { border-color:var(--blue-bright); }
+.question-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:1rem;
+}
+.question-num {
+    font-family:'Nunito',sans-serif; font-weight:900;
+    font-size:0.85rem; color:var(--blue-mid);
+    background:rgba(33,150,243,0.1);
+    padding:3px 10px; border-radius:20px;
+}
+.option-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+.option-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--text-light); flex-shrink:0;
+}
+.option-input { flex:1; }
+.remove-option {
+    background:none; border:none; color:var(--text-light);
+    cursor:pointer; font-size:0.85rem; padding:4px;
+    transition:color 0.2s;
+}
+.remove-option:hover { color:var(--red); }
+.add-option-btn {
+    background:none; border:1.5px dashed rgba(30,95,170,0.25);
+    border-radius:var(--radius-sm); padding:6px 12px;
+    font-size:0.8rem; color:var(--text-light);
+    cursor:pointer; width:100%; margin-top:4px;
+    transition:all 0.2s; font-family:'Poppins',sans-serif;
+}
+.add-option-btn:hover { border-color:var(--blue-bright); color:var(--blue-mid); }
+.form-actions {
+    padding:1.2rem 1.5rem;
+    display:flex; gap:1rem; align-items:center;
+    background:#f8faff; border-top:1px solid rgba(0,0,0,0.06);
+}
+#add-question-btn {
+    background:linear-gradient(135deg,var(--blue-bright),var(--blue-mid));
+    color:white; border:none; border-radius:var(--radius-sm);
+    padding:0.6rem 1.2rem; font-size:0.85rem; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; gap:6px;
+    font-family:'Poppins',sans-serif; transition:opacity 0.2s;
+}
+#add-question-btn:hover { opacity:0.9; }
+.empty-questions {
+    text-align:center; padding:2.5rem;
+    color:var(--text-light); font-size:0.9rem;
+}
+.empty-questions i { font-size:2rem; display:block; margin-bottom:0.5rem; opacity:0.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1rem">
+    <a href="{% url 'admin_quizzes' %}" class="btn btn-outline btn-sm">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+    </a>
+</div>
+
+<form method="post" id="quiz-form">
+    {% csrf_token %}
+
+    <!-- INFORMATIONS GÉNÉRALES -->
+    <div class="form-card" style="margin-bottom:1.5rem">
+        <div class="form-section">
+            <div class="form-section-title">
+                <span><i class="fas fa-info-circle" style="color:var(--blue-bright)"></i> Informations générales</span>
+            </div>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label for="title">Titre du quiz *</label>
+                    <input type="text" id="title" name="title"
+                        class="form-input {% if errors.title %}error{% endif %}"
+                        value="{{ form_data.title|default:'' }}"
+                        placeholder="Ex: Quiz de géographie mondiale" required>
+                    {% if errors.title %}<span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ errors.title }}</span>{% endif %}
+                </div>
+            </div>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description"
+                        class="form-textarea"
+                        placeholder="Description du quiz (optionnel)">{{ form_data.description|default:'' }}</textarea>
+                </div>
+            </div>
+            <div class="form-row three">
+                <div class="form-group">
+                    <label for="category">Catégorie *</label>
+                    <select id="category" name="category"
+                        class="form-select {% if errors.category %}error{% endif %}">
+                        <option value="">-- Choisir --</option>
+                        {% for cat_key, cat_label in categories %}
+                        <option value="{{ cat_key }}"
+                            {% if form_data.category == cat_key %}selected{% endif %}>
+                            {{ cat_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.category %}<span class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ errors.category }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="difficulty">Difficulté</label>
+                    <select id="difficulty" name="difficulty" class="form-select">
+                        <option value="easy" {% if form_data.difficulty == 'easy' %}selected{% endif %}>🟢 Facile</option>
+                        <option value="medium" {% if form_data.difficulty == 'medium' or not form_data.difficulty %}selected{% endif %}>🟡 Moyen</option>
+                        <option value="hard" {% if form_data.difficulty == 'hard' %}selected{% endif %}>🔴 Difficile</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="time_limit">Temps par question (sec)</label>
+                    <input type="number" id="time_limit" name="time_limit"
+                        class="form-input" min="5" max="300"
+                        value="{{ form_data.time_limit|default:30 }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="author_id">Auteur</label>
+                    <select id="author_id" name="author_id" class="form-select">
+                        {% for u in users %}
+                        <option value="{{ u.id }}"
+                            {% if form_data.author_id == u.id %}selected{% endif %}>
+                            {{ u.username }}{% if u.is_staff %} (staff){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="justify-content:flex-end">
+                    <div class="toggle-row" style="margin-bottom:0.4rem">
+                        <label class="switch">
+                            <input type="checkbox" name="is_published" id="is_published"
+                                {% if form_data.is_published != False %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <div class="toggle-label">Publier le quiz</div>
+                            <div class="toggle-sub">Visible par tous les utilisateurs</div>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <label class="switch">
+                            <input type="checkbox" name="random_order" id="random_order"
+                                {% if form_data.random_order %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                        <div>
+                            <div class="toggle-label">Ordre aléatoire</div>
+                            <div class="toggle-sub">Mélanger les questions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="form-card">
+        <div class="form-section">
+            <div class="form-section-title">
+                <span><i class="fas fa-list-ol" style="color:var(--yellow-dark)"></i> Questions</span>
+                <button type="button" id="add-question-btn" onclick="addQuestion()">
+                    <i class="fas fa-plus"></i> Ajouter une question
+                </button>
+            </div>
+
+            <div id="questions-container">
+                <!-- Questions insérées dynamiquement -->
+            </div>
+
+            <div id="empty-msg" class="empty-questions">
+                <i class="fas fa-question-circle"></i>
+                Aucune question — cliquez sur « Ajouter une question » pour commencer
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> {{ action }} le quiz
+            </button>
+            <a href="{% url 'admin_quizzes' %}" class="btn btn-outline">
+                <i class="fas fa-times"></i> Annuler
+            </a>
+            <span id="question-counter" style="margin-left:auto;color:var(--text-light);font-size:0.82rem">
+                0 question(s)
+            </span>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let questionIndex = 0;
+
+const existingQuestions = {{ existing_questions|default:"[]"|safe }};
+
+function addQuestion(data) {
+    const idx = questionIndex++;
+    const container = document.getElementById('questions-container');
+    document.getElementById('empty-msg').style.display = 'none';
+
+    const text    = data ? data.text : '';
+    const type    = data ? data.type : 'mcq';
+    const correct = data ? data.correct_answer : '';
+    const expl    = data ? data.explanation : '';
+    const pts     = data ? data.points : 100;
+    const opts    = data ? (data.options || []) : ['', ''];
+
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `q-card-${idx}`;
+    card.innerHTML = `
+        <div class="question-header">
+            <span class="question-num">Question ${idx + 1}</span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion(${idx})">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="form-row full" style="margin-bottom:0.8rem">
+            <div class="form-group">
+                <label>Texte de la question *</label>
+                <textarea name="questions[${idx}][text]" class="form-textarea" rows="2"
+                    placeholder="Entrez votre question ici..." required>${text}</textarea>
+            </div>
+        </div>
+        <div class="form-row three" style="margin-bottom:1rem">
+            <div class="form-group">
+                <label>Type de question</label>
+                <select name="questions[${idx}][type]" class="form-select" onchange="onTypeChange(this, ${idx})">
+                    <option value="mcq" ${type === 'mcq' ? 'selected' : ''}>QCM (choix multiple)</option>
+                    <option value="truefalse" ${type === 'truefalse' ? 'selected' : ''}>Vrai / Faux</option>
+                    <option value="short" ${type === 'short' ? 'selected' : ''}>Réponse courte</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Réponse correcte *</label>
+                <input type="text" name="questions[${idx}][correct]" class="form-input"
+                    value="${correct}" placeholder="Réponse correcte" required>
+            </div>
+            <div class="form-group">
+                <label>Points</label>
+                <input type="number" name="questions[${idx}][points]" class="form-input"
+                    value="${pts}" min="10" max="1000">
+            </div>
+        </div>
+        <div id="options-area-${idx}" class="options-area" style="${type === 'mcq' ? '' : 'display:none'}">
+            <label style="margin-bottom:6px;display:block">Options de réponse</label>
+            <div id="options-list-${idx}"></div>
+            <button type="button" class="add-option-btn" onclick="addOption(${idx})">
+                <i class="fas fa-plus"></i> Ajouter une option
+            </button>
+        </div>
+        <div class="form-row full" style="margin-top:0.8rem">
+            <div class="form-group">
+                <label>Explication (optionnel)</label>
+                <input type="text" name="questions[${idx}][explanation]" class="form-input"
+                    value="${expl}" placeholder="Explication affichée après la réponse...">
+            </div>
+        </div>
+    `;
+    container.appendChild(card);
+
+    // Ajouter les options
+    if (type === 'truefalse') {
+        addOption(idx, 'Vrai');
+        addOption(idx, 'Faux');
+    } else if (opts.length > 0) {
+        opts.forEach(o => addOption(idx, o));
+    } else {
+        addOption(idx, '');
+        addOption(idx, '');
+    }
+
+    updateCounter();
+}
+
+function removeQuestion(idx) {
+    const card = document.getElementById(`q-card-${idx}`);
+    if (card) card.remove();
+    updateCounter();
+    renumberQuestions();
+}
+
+function onTypeChange(sel, idx) {
+    const area = document.getElementById(`options-area-${idx}`);
+    const list = document.getElementById(`options-list-${idx}`);
+    if (sel.value === 'mcq') {
+        area.style.display = '';
+        if (list.children.length === 0) { addOption(idx, ''); addOption(idx, ''); }
+    } else if (sel.value === 'truefalse') {
+        area.style.display = '';
+        list.innerHTML = '';
+        addOption(idx, 'Vrai');
+        addOption(idx, 'Faux');
+    } else {
+        area.style.display = 'none';
+    }
+}
+
+let optionCounters = {};
+function addOption(qIdx, value) {
+    if (!optionCounters[qIdx]) optionCounters[qIdx] = 0;
+    const oIdx = optionCounters[qIdx]++;
+    const list = document.getElementById(`options-list-${qIdx}`);
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.id = `opt-${qIdx}-${oIdx}`;
+    row.innerHTML = `
+        <div class="option-dot"></div>
+        <input type="text" name="questions[${qIdx}][options][]" class="form-input option-input"
+            value="${value || ''}" placeholder="Option de réponse...">
+        <button type="button" class="remove-option" onclick="removeOption('opt-${qIdx}-${oIdx}')">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    list.appendChild(row);
+}
+
+function removeOption(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+function updateCounter() {
+    const cards = document.querySelectorAll('.question-card');
+    document.getElementById('question-counter').textContent = `${cards.length} question(s)`;
+    document.getElementById('empty-msg').style.display = cards.length === 0 ? '' : 'none';
+}
+
+function renumberQuestions() {
+    document.querySelectorAll('.question-num').forEach((el, i) => {
+        el.textContent = `Question ${i + 1}`;
+    });
+}
+
+// Charger les questions existantes (mode édition)
+window.addEventListener('DOMContentLoaded', () => {
+    if (existingQuestions && existingQuestions.length > 0) {
+        existingQuestions.forEach(q => addQuestion(q));
+    }
+});
+</script>
+{% endblock %}

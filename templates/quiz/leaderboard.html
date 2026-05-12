@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load quiz_tags %}
+{% block title %}Classement{% endblock %}
+
+{% block extra_css %}
+<style>
+.podium { display:flex; justify-content:center; align-items:flex-end; gap:1rem; margin-bottom:3rem; flex-wrap:wrap; }
+.pod { text-align:center; background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:1.5rem 2rem; min-width:145px; transition:all .3s; }
+.pod:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg) !important; }
+.pod.p1 { border-top:5px solid #FFD700; min-height:220px; }
+.pod.p2 { border-top:5px solid #C0C0C0; min-height:190px; }
+.pod.p3 { border-top:5px solid #CD7F32; min-height:170px; }
+.pod-medal { font-size:2.8rem; margin-bottom:.7rem; }
+.pod-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); color:white; font-family:'Nunito',sans-serif; font-weight:900; font-size:1.4rem; display:flex; align-items:center; justify-content:center; margin:0 auto .5rem; }
+.pod-name   { font-weight:800; font-family:'Nunito',sans-serif; color:var(--blue-dark); font-size:.92rem; }
+.pod-score  { font-family:'Nunito',sans-serif; font-weight:900; font-size:1.4rem; color:var(--blue-mid); margin-top:.2rem; }
+.pod-lbl    { font-size:.72rem; color:var(--text-light); }
+
+.lb-table  { width:100%; border-collapse:collapse; }
+.lb-table th { padding:.72rem 1.2rem; text-align:left; font-size:.74rem; font-weight:700; color:var(--text-light); text-transform:uppercase; background:rgba(33,150,243,.05); border-bottom:2px solid rgba(33,150,243,.12); }
+.lb-table td { padding:.95rem 1.2rem; border-bottom:1px solid rgba(0,0,0,.05); }
+.lb-table tr:hover td { background:rgba(33,150,243,.03); }
+.lb-table tr.me td { background:rgba(255,193,7,.07); font-weight:700; }
+.rank-badge { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.82rem; }
+.user-cell  { display:flex; align-items:center; gap:.75rem; }
+.mini-av    { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); color:white; font-family:'Nunito',sans-serif; font-weight:900; font-size:.88rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pts-cell   { font-family:'Nunito',sans-serif; font-weight:900; color:var(--blue-mid); font-size:1.08rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>🏆 Classement mondial</h1>
+        <p>Les meilleurs joueurs de la plateforme QuickQuiz</p>
+    </div>
+</div>
+
+<div class="container pb-4">
+    <!-- Podium top 3 -->
+    {% if leaderboard %}
+    <div class="podium">
+        {% if leaderboard|length >= 2 %}
+        <div class="pod p2 fade-in fade-in-2">
+            <div class="pod-medal">🥈</div>
+            <div class="pod-avatar">{{ leaderboard.1.user.username.0|upper }}</div>
+            <div class="pod-name">{{ leaderboard.1.user.username }}</div>
+            <div class="pod-score">{{ leaderboard.1.total_score }}</div>
+            <div class="pod-lbl">points</div>
+        </div>
+        {% endif %}
+        <div class="pod p1 fade-in fade-in-1">
+            <div class="pod-medal">🥇</div>
+            <div class="pod-avatar" style="width:68px;height:68px;font-size:1.7rem">{{ leaderboard.0.user.username.0|upper }}</div>
+            <div class="pod-name" style="font-size:1.05rem">{{ leaderboard.0.user.username }}</div>
+            <div class="pod-score" style="font-size:1.7rem">{{ leaderboard.0.total_score }}</div>
+            <div class="pod-lbl">points</div>
+        </div>
+        {% if leaderboard|length >= 3 %}
+        <div class="pod p3 fade-in fade-in-3">
+            <div class="pod-medal">🥉</div>
+            <div class="pod-avatar">{{ leaderboard.2.user.username.0|upper }}</div>
+            <div class="pod-name">{{ leaderboard.2.user.username }}</div>
+            <div class="pod-score">{{ leaderboard.2.total_score }}</div>
+            <div class="pod-lbl">points</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Tableau complet -->
+    <div class="card fade-in" style="overflow:auto">
+        <table class="lb-table">
+            <thead><tr>
+                <th>#</th>
+                <th>Joueur</th>
+                <th>Score total</th>
+                <th>Quiz joués</th>
+                <th>Meilleur score</th>
+                <th>Niveau</th>
+            </tr></thead>
+            <tbody>
+            {% for p in leaderboard %}
+            <tr {% if user.is_authenticated and p.user == user %}class="me"{% endif %}>
+                <td>
+                    <span class="rank-badge" style="{% if forloop.counter == 1 %}background:linear-gradient(135deg,#FFD700,#FFA500);color:white{% elif forloop.counter == 2 %}background:linear-gradient(135deg,#C0C0C0,#9e9e9e);color:white{% elif forloop.counter == 3 %}background:linear-gradient(135deg,#CD7F32,#a0522d);color:white{% else %}background:rgba(33,150,243,.1);color:var(--blue-mid){% endif %}">
+                        {{ forloop.counter }}
+                    </span>
+                </td>
+                <td>
+                    <div class="user-cell">
+                        <div class="mini-av">{{ p.user.username.0|upper }}</div>
+                        <div>
+                            <div style="font-weight:700; color:var(--text-dark)">{{ p.user.username }}</div>
+                            {% if user.is_authenticated and p.user == user %}<div style="font-size:.72rem; color:var(--yellow-dark); font-weight:700">⭐ Vous</div>{% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td class="pts-cell">{{ p.total_score }}</td>
+                <td>{{ p.quizzes_played }}</td>
+                <td><span class="badge badge-yellow">{{ p.best_score }}</span></td>
+                <td>
+                    {% with p.level as lvl %}
+                    <span class="badge badge-{{ lvl.2 }}">{{ lvl.0 }}</span>
+                    {% endwith %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-5" style="color:var(--text-light)">
+                Aucun classement disponible.<br>
+                <a href="{% url 'quiz_list' %}" class="btn btn-primary btn-sm mt-3">Jouer maintenant !</a>
+            </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

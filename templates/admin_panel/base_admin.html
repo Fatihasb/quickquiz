@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} — QuickQuiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --blue-dark: #1a3a6b;
+            --blue-mid: #1e5faa;
+            --blue-bright: #2196F3;
+            --yellow: #FFC107;
+            --yellow-dark: #FF8F00;
+            --green: #4CAF50;
+            --red: #f44336;
+            --orange: #FF9800;
+            --bg: #f0f6ff;
+            --sidebar-w: 250px;
+            --text-dark: #1a2a4a;
+            --text-mid: #3a5080;
+            --text-light: #7a9bc0;
+            --shadow: 0 4px 20px rgba(30,95,170,0.12);
+            --radius: 14px;
+            --radius-sm: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text-dark); display: flex; min-height: 100vh; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: linear-gradient(180deg, var(--blue-dark) 0%, #0f2548 100%);
+            min-height: 100vh;
+            position: fixed;
+            left: 0; top: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        }
+        .sidebar-header {
+            padding: 1.5rem 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-brand .icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--yellow), var(--yellow-dark));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .sidebar-brand span { color: var(--yellow); }
+        .sidebar-subtitle {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.45);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .sidebar-nav { flex: 1; padding: 1rem 0; }
+        .nav-section {
+            padding: 0.5rem 1.2rem 0.3rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.35);
+            font-weight: 700;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.7rem 1.2rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            margin: 1px 0;
+        }
+        .sidebar-link:hover { background: rgba(255,255,255,0.08); color: white; }
+        .sidebar-link.active {
+            background: rgba(33,150,243,0.2);
+            color: white;
+            border-left-color: var(--blue-bright);
+        }
+        .sidebar-link i { width: 18px; text-align: center; font-size: 0.95rem; }
+        .sidebar-footer {
+            padding: 1rem 1.2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-user {
+            display: flex; align-items: center; gap: 10px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.82rem;
+        }
+        .sidebar-avatar {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--blue-bright), var(--blue-mid));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900; color: white; font-size: 0.9rem;
+        }
+        .sidebar-user-info .name { color: white; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-user-info .role { color: rgba(255,255,255,0.4); font-size: 0.72rem; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .topbar {
+            background: white;
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(30,95,170,0.08);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--text-dark);
+        }
+        .topbar-actions { display: flex; align-items: center; gap: 1rem; }
+        .topbar-actions a {
+            color: var(--text-mid);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+        .topbar-actions a:hover { background: var(--bg); color: var(--blue-mid); }
+
+        .content-area { padding: 2rem; flex: 1; }
+
+        /* ===== CARDS ===== */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin-bottom: 2rem; }
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.4rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .stat-icon {
+            width: 52px; height: 52px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .stat-icon.blue { background: rgba(33,150,243,0.12); color: var(--blue-bright); }
+        .stat-icon.green { background: rgba(76,175,80,0.12); color: var(--green); }
+        .stat-icon.yellow { background: rgba(255,193,7,0.15); color: var(--yellow-dark); }
+        .stat-icon.red { background: rgba(244,67,54,0.1); color: var(--red); }
+        .stat-icon.purple { background: rgba(156,39,176,0.1); color: #9c27b0; }
+        .stat-value {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            line-height: 1;
+        }
+        .stat-label { font-size: 0.8rem; color: var(--text-light); font-weight: 600; margin-top: 3px; }
+        .stat-badge {
+            font-size: 0.7rem;
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-weight: 700;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .stat-badge.up { background: rgba(76,175,80,0.15); color: var(--green); }
+        .stat-badge.neutral { background: rgba(33,150,243,0.1); color: var(--blue-mid); }
+
+        /* ===== TABLE ===== */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-dark);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-body { padding: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f8faff;
+            padding: 0.8rem 1.2rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+            font-weight: 700;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        td {
+            padding: 0.9rem 1.2rem;
+            font-size: 0.875rem;
+            color: var(--text-dark);
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8faff; }
+
+        /* ===== BADGES ===== */
+        .badge {
+            display: inline-flex; align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .badge-green { background: rgba(76,175,80,0.12); color: #2e7d32; }
+        .badge-red { background: rgba(244,67,54,0.1); color: #c62828; }
+        .badge-yellow { background: rgba(255,193,7,0.15); color: #e65100; }
+        .badge-blue { background: rgba(33,150,243,0.1); color: var(--blue-mid); }
+        .badge-gray { background: rgba(0,0,0,0.07); color: #666; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0.45rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--blue-bright); color: white; }
+        .btn-primary:hover { background: var(--blue-mid); }
+        .btn-success { background: var(--green); color: white; }
+        .btn-success:hover { filter: brightness(0.9); }
+        .btn-danger { background: var(--red); color: white; }
+        .btn-danger:hover { filter: brightness(0.9); }
+        .btn-warning { background: var(--orange); color: white; }
+        .btn-warning:hover { filter: brightness(0.9); }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid currentColor;
+            color: var(--blue-mid);
+        }
+        .btn-outline:hover { background: rgba(33,150,243,0.07); }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
+
+        /* ===== SEARCH / FILTER ===== */
+        .filter-bar {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.5rem 1rem 0.5rem 2.4rem;
+            border: 1.5px solid rgba(30,95,170,0.15);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            outline: none;
+            background: var(--bg);
+        }
+        .search-input:focus { border-color: var(--blue-bright); background: white; }
+        .search-wrap { position: relative; flex: 1; min-width: 200px; }
+        .search-wrap i {
+            position: absolute; left: 0.8rem; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light); font-size: 0.85rem;
+        }
+        select.filter-select {
+            padding: 0.5rem 1rem;
+            border: 1.5px solid rgba(30,95,170,0.15);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            background: var(--bg);
+            outline: none;
+            cursor: pointer;
+        }
+        select.filter-select:focus { border-color: var(--blue-bright); }
+
+        /* ===== ALERTS ===== */
+        .alert {
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .alert-success { background: rgba(76,175,80,0.12); color: #2e7d32; border-left: 4px solid var(--green); }
+        .alert-error { background: rgba(244,67,54,0.1); color: #c62828; border-left: 4px solid var(--red); }
+
+        /* ===== USER AVATAR ===== */
+        .u-avatar {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--blue-bright), var(--blue-dark));
+            border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900; color: white; font-size: 0.85rem;
+        }
+
+        /* ===== GRID ===== */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem; }
+
+        @media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+            .two-col, .three-col { grid-template-columns: 1fr; }
+        }
+
+        /* ===== CONFIRM MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .modal-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .modal-title { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .modal-text { color: var(--text-mid); font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; gap: 1rem; justify-content: center; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="/" class="sidebar-brand">
+            <div class="icon">⚡</div>
+            <div>Quick<span>Quiz</span></div>
+        </a>
+        <div class="sidebar-subtitle">Panneau d'administration</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a href="{% url 'admin_overview' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_overview' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt"></i> Vue d'ensemble
+        </a>
+
+        <div class="nav-section" style="margin-top:0.8rem">Gestion</div>
+        <a href="{% url 'admin_users' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">
+            <i class="fas fa-users"></i> Utilisateurs
+        </a>
+        <a href="{% url 'admin_quizzes' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_quizzes' %}active{% endif %}">
+            <i class="fas fa-question-circle"></i> Quiz
+        </a>
+        <a href="{% url 'admin_stats' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_stats' %}active{% endif %}">
+            <i class="fas fa-chart-bar"></i> Statistiques
+        </a>
+
+        <div class="nav-section" style="margin-top:0.8rem">Site</div>
+        <a href="/" class="sidebar-link">
+            <i class="fas fa-home"></i> Voir le site
+        </a>
+        <a href="/admin/" class="sidebar-link">
+            <i class="fas fa-cog"></i> Django Admin
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="sidebar-avatar">{{ request.user.username.0|upper }}</div>
+            <div class="sidebar-user-info">
+                <div class="name">{{ request.user.username }}</div>
+                <div class="role">{% if request.user.is_superuser %}Superadmin{% else %}Staff{% endif %}</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+        <div class="topbar-actions">
+            <a href="/profile/"><i class="fas fa-user"></i> Mon profil</a>
+            <a href="/logout/"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+        </div>
+    </div>
+
+    <div class="content-area">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<!-- MODAL CONFIRMATION -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <div class="modal-icon" id="modalIcon">⚠️</div>
+        <div class="modal-title" id="modalTitle">Confirmer</div>
+        <div class="modal-text" id="modalText">Êtes-vous sûr ?</div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal()">Annuler</button>
+            <form id="modalForm" method="post" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" id="modalConfirmBtn">Confirmer</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmAction(action, name, url, btnClass, btnText, icon) {
+    document.getElementById('modalIcon').textContent = icon || '⚠️';
+    document.getElementById('modalTitle').textContent = action;
+    document.getElementById('modalText').textContent = `Voulez-vous vraiment effectuer cette action sur « ${name} » ?`;
+    document.getElementById('modalForm').action = url;
+    var btn = document.getElementById('modalConfirmBtn');
+    btn.className = 'btn ' + (btnClass || 'btn-danger');
+    btn.textContent = btnText || 'Confirmer';
+    document.getElementById('confirmModal').classList.add('show');
+}
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

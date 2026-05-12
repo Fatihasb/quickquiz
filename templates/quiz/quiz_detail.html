@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load quiz_tags %}
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-hero {
+    background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+    padding: 3rem 0; color: white; margin-bottom: 2.5rem;
+}
+.detail-hero h1 { font-family:'Nunito',sans-serif; font-weight:900; font-size:2rem; margin-bottom:.5rem; }
+.detail-meta { display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:1rem; }
+.detail-meta span { display:flex; align-items:center; gap:6px; color:rgba(255,255,255,.8); font-size:.9rem; }
+.detail-grid { display:grid; grid-template-columns:2fr 1fr; gap:2rem; align-items:start; }
+.info-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:2rem; margin-bottom:1.5rem; }
+.info-card h2 { font-family:'Nunito',sans-serif; font-weight:800; color:var(--blue-dark); font-size:1.1rem; margin-bottom:1.2rem; padding-bottom:.7rem; border-bottom:2px solid rgba(33,150,243,.12); }
+.score-row { display:flex; align-items:center; gap:.8rem; padding:.8rem 0; border-bottom:1px solid rgba(0,0,0,.05); }
+.score-row:last-child { border:none; }
+.score-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); color:white; font-family:'Nunito',sans-serif; font-weight:900; font-size:.9rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.score-name { flex:1; font-weight:600; font-size:.9rem; }
+.score-pts  { font-family:'Nunito',sans-serif; font-weight:900; color:var(--blue-mid); }
+.play-box { background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid)); border-radius:var(--radius); padding:2rem; text-align:center; color:white; position:sticky; top:80px; }
+.play-box h3 { font-family:'Nunito',sans-serif; font-weight:900; font-size:1.3rem; margin-bottom:.5rem; }
+.play-box p  { color:rgba(255,255,255,.75); font-size:.88rem; margin-bottom:1.5rem; }
+.play-stats { display:flex; justify-content:center; gap:1.5rem; margin-bottom:1.8rem; }
+.ps { text-align:center; }
+.ps .v { font-family:'Nunito',sans-serif; font-size:1.6rem; font-weight:900; color:var(--yellow); }
+.ps .l { font-size:.72rem; color:rgba(255,255,255,.65); }
+.my-best { background:rgba(255,193,7,.15); border:1px solid rgba(255,193,7,.35); border-radius:var(--radius-sm); padding:.8rem 1rem; margin-top:1rem; font-size:.85rem; color:var(--yellow); font-weight:700; }
+@media(max-width:768px) { .detail-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-hero">
+    <div class="container">
+        <div class="badge badge-blue" style="margin-bottom:.8rem">{{ quiz.category }}</div>
+        <h1>{{ quiz.title }}</h1>
+        <div class="detail-meta">
+            <span><i class="fas fa-user"></i> Par {{ quiz.author.username }}</span>
+            <span><i class="fas fa-question-circle"></i> {{ quiz.question_count }} questions</span>
+            <span><i class="fas fa-clock"></i> {{ quiz.time_limit }}s par question</span>
+            <span><i class="fas fa-play-circle"></i> {{ quiz.play_count }} parties</span>
+            <span class="badge {{ quiz.difficulty|difficulty_class }}">{{ quiz.difficulty|difficulty_label }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="detail-grid">
+        <div>
+            {% if quiz.description %}
+            <div class="info-card">
+                <h2><i class="fas fa-info-circle" style="color:var(--blue-bright)"></i> Description</h2>
+                <p style="color:var(--text-mid); line-height:1.7">{{ quiz.description }}</p>
+            </div>
+            {% endif %}
+
+            <div class="info-card">
+                <h2><i class="fas fa-list" style="color:var(--blue-bright)"></i> Questions ({{ quiz.question_count }})</h2>
+                {% for q in quiz.questions.all %}
+                <div style="padding:.8rem 0; border-bottom:1px solid rgba(0,0,0,.05); display:flex; gap:.8rem; align-items:flex-start">
+                    <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); color:white; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:800; flex-shrink:0">{{ forloop.counter }}</div>
+                    <div>
+                        <div style="font-weight:600; font-size:.9rem; color:var(--text-dark)">{{ q.text|truncatechars:80 }}</div>
+                        <div style="margin-top:.3rem">
+                            <span class="badge badge-blue" style="font-size:.7rem">{{ q.get_question_type_display }}</span>
+                            <span class="badge badge-yellow" style="font-size:.7rem">{{ q.points }} pts</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="info-card">
+                <h2><i class="fas fa-trophy" style="color:var(--yellow-dark)"></i> Meilleurs scores</h2>
+                {% for r in top_scores %}
+                <div class="score-row">
+                    <div class="score-avatar">{{ r.user.username.0|upper }}</div>
+                    <div class="score-name">{{ r.user.username }}</div>
+                    <div class="score-pts">{{ r.score }} pts</div>
+                    <div style="font-size:.78rem; color:var(--text-light)">{{ r.correct }}/{{ quiz.question_count }} ✓</div>
+                </div>
+                {% empty %}
+                <p style="color:var(--text-light); font-size:.88rem; text-align:center; padding:1rem">Soyez le premier à jouer !</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Play box -->
+        <div class="play-box">
+            <h3>Prêt à jouer ?</h3>
+            <p>{{ quiz.question_count }} questions · {{ quiz.time_limit }}s/question</p>
+            <div class="play-stats">
+                <div class="ps"><div class="v">{{ quiz.play_count }}</div><div class="l">Parties</div></div>
+                <div class="ps"><div class="v">{{ quiz.avg_score }}</div><div class="l">Score moyen</div></div>
+            </div>
+            <a href="{% url 'quiz_play' quiz.id %}" class="btn btn-primary btn-lg" style="width:100%; justify-content:center">
+                <i class="fas fa-play"></i> Commencer le quiz
+            </a>
+            {% if my_best %}
+            <div class="my-best">⭐ Votre meilleur : {{ my_best.score }} pts ({{ my_best.correct }}/{{ quiz.question_count }})</div>
+            {% endif %}
+            {% if user.is_authenticated and quiz.author == user %}
+            <a href="{% url 'quiz_edit' quiz.id %}" class="btn btn-outline btn-sm" style="margin-top:1rem; width:100%; justify-content:center">
+                <i class="fas fa-edit"></i> Modifier ce quiz
+            </a>
+            {% endif %}
+
+            <!-- CODE PIN & LIEN DE PARTAGE -->
+            <div style="margin-top:1.5rem; background:rgba(255,255,255,0.15); border-radius:var(--radius-sm); padding:1rem; border:1px solid rgba(255,255,255,0.25)">
+                <div style="font-size:.75rem; color:rgba(255,255,255,.65); text-transform:uppercase; letter-spacing:1px; margin-bottom:.5rem">
+                    <i class="fas fa-key"></i> Code d'accès
+                </div>
+                <div style="font-family:'Nunito',sans-serif; font-weight:900; font-size:2rem; color:var(--yellow); letter-spacing:.3rem; text-align:center; margin-bottom:.6rem">
+                    {{ quiz.access_code }}
+                </div>
+                <button onclick="copyPin()" id="copy-pin-btn"
+                    style="width:100%; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:.5rem; font-size:.8rem; cursor:pointer; font-family:'Poppins',sans-serif; font-weight:600; transition:all .2s"
+                    onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                    <i class="fas fa-copy"></i> Copier le lien de partage
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyPin() {
+    const link = window.location.origin + '/join/{{ quiz.access_code }}/';
+    navigator.clipboard.writeText(link).then(() => {
+        const btn = document.getElementById('copy-pin-btn');
+        btn.innerHTML = '<i class="fas fa-check"></i> Lien copié !';
+        btn.style.background = 'rgba(76,175,80,0.4)';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-copy"></i> Copier le lien de partage';
+            btn.style.background = 'rgba(255,255,255,0.15)';
+        }, 2500);
+    });
+}
+</script>
+{% endblock %}
