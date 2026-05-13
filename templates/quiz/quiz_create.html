@@ -83,42 +83,52 @@
                 <i class="fas fa-info-circle" style="color:var(--blue-bright)"></i> Informations générales
             </div>
 
-            {% if form.errors %}
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i>
-                Veuillez corriger les erreurs ci-dessous.
-            </div>
-            {% endif %}
-
             <div class="mb-3">
                 <label class="form-label">Titre du quiz *</label>
-                {{ form.title }}
-                {% if form.title.errors %}<div class="form-error">{{ form.title.errors.0 }}</div>{% endif %}
+                <input type="text" name="title" class="form-control"
+                    placeholder="Ex: Quiz de géographie mondiale"
+                    value="{% if quiz %}{{ quiz.title }}{% endif %}" required>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Description</label>
-                {{ form.description }}
+                <textarea name="description" class="form-control" rows="3"
+                    placeholder="Description du quiz (optionnel)">{% if quiz %}{{ quiz.description }}{% endif %}</textarea>
             </div>
 
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Catégorie *</label>
-                    {{ form.category }}
-                    {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
+                    <select name="category" class="form-select" required>
+                        <option value="">-- Choisir une catégorie --</option>
+                        {% for cat_key, cat_label in categories %}
+                        <option value="{{ cat_key }}" {% if quiz and quiz.category == cat_key %}selected{% endif %}>
+                            {{ cat_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Difficulté *</label>
-                    {{ form.difficulty }}
+                    <select name="difficulty" class="form-select">
+                        <option value="easy"   {% if quiz and quiz.difficulty == 'easy' %}selected{% endif %}>🟢 Facile</option>
+                        <option value="medium" {% if not quiz or quiz.difficulty == 'medium' %}selected{% endif %}>🟡 Moyen</option>
+                        <option value="hard"   {% if quiz and quiz.difficulty == 'hard' %}selected{% endif %}>🔴 Difficile</option>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Temps par question (secondes) *</label>
-                    {{ form.time_limit }}
-                    {% if form.time_limit.errors %}<div class="form-error">{{ form.time_limit.errors.0 }}</div>{% endif %}
+                    <input type="number" name="time_limit" class="form-control"
+                        value="{% if quiz %}{{ quiz.time_limit }}{% else %}30{% endif %}"
+                        min="5" max="300" required>
                 </div>
-                <div class="col-md-6 d-flex align-items-center gap-2 pt-2">
-                    {{ form.random_order }}
-                    <label class="form-label mb-0" style="text-transform:none; font-size:.9rem">Ordre aléatoire des questions</label>
+                <div class="col-md-6 d-flex align-items-center gap-2 pt-4">
+                    <input type="checkbox" name="random_order" id="random_order"
+                        style="width:18px;height:18px;accent-color:var(--blue-bright);cursor:pointer"
+                        {% if quiz and quiz.random_order %}checked{% endif %}>
+                    <label for="random_order" class="form-label mb-0" style="text-transform:none;font-size:.9rem;cursor:pointer">
+                        Ordre aléatoire des questions
+                    </label>
                 </div>
             </div>
         </div>

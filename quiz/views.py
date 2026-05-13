@@ -26,7 +26,7 @@ def home(request):
         'total_users': UserProfile.objects.count(),
         'total_plays': QuizResult.objects.count(),
     }
-    return render(request, 'home.html', context)
+    return render(request, 'quiz/home.html', context)
 
 
 # ===== QUIZ LIST =====
@@ -190,9 +190,8 @@ def quiz_create(request):
         messages.success(request, f'Quiz "{quiz.title}" créé avec succès !')
         return redirect('quiz_list')
 
-    categories = Quiz.CATEGORY_CHOICES
     return render(request, 'quiz_create.html', {
-        'categories': [c[0] for c in categories],
+        'categories': Quiz.CATEGORY_CHOICES,
         'form': {},
     })
 
@@ -213,11 +212,10 @@ def quiz_edit(request, quiz_id):
         return redirect('quiz_list')
 
     existing_questions = json.dumps([q.to_json() for q in quiz.questions.all()])
-    return render(request, 'quiz_create.html', {
+    return render(request, 'quiz/quiz_create.html', {
         'quiz': quiz,
-        'existing_questions': quiz.questions.all(),
-        'categories': [c[0] for c in Quiz.CATEGORY_CHOICES],
-        'form': quiz,
+        'existing_questions': existing_questions,
+        'categories': Quiz.CATEGORY_CHOICES,
     })
 
 
