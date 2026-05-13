@@ -464,16 +464,16 @@ def _save_questions(post_data, quiz):
     """Helper: parser les questions du POST et les sauvegarder."""
     import re
     questions_data = {}
-    for key, value in post_data.items():
+    for key, values in post_data.lists():
         match = re.match(r'questions\[(\d+)\]\[(\w+)\](?:\[\])?', key)
         if match:
             idx, field = match.group(1), match.group(2)
             if idx not in questions_data:
                 questions_data[idx] = {'options': [], 'type': 'mcq'}
             if field == 'options':
-                questions_data[idx]['options'].append(value)
+                questions_data[idx]['options'].extend(values)
             else:
-                questions_data[idx][field] = value
+                questions_data[idx][field] = values[-1]
 
     for i, (idx, qdata) in enumerate(sorted(questions_data.items())):
         if qdata.get('text', '').strip():

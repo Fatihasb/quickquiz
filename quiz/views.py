@@ -154,20 +154,19 @@ def quiz_create(request):
         )
 
         # Parse questions
+        import re
         questions_data = {}
-        for key, value in request.POST.items():
+        for key, values in request.POST.lists():
             if key.startswith('questions['):
-                # Parse questions[0][text] etc.
-                import re
                 match = re.match(r'questions\[(\d+)\]\[(\w+)\](?:\[\])?', key)
                 if match:
                     idx, field = match.group(1), match.group(2)
                     if idx not in questions_data:
                         questions_data[idx] = {'options': [], 'type': 'mcq'}
                     if field == 'options':
-                        questions_data[idx]['options'].append(value)
+                        questions_data[idx]['options'].extend(values)
                     else:
-                        questions_data[idx][field] = value
+                        questions_data[idx][field] = values[-1]
 
         for i, (idx, qdata) in enumerate(sorted(questions_data.items())):
             if qdata.get('text'):
@@ -192,6 +191,7 @@ def quiz_create(request):
 
     return render(request, 'quiz/quiz_create.html', {
         'categories': Quiz.CATEGORY_CHOICES,
+        'action': 'Créer',
         'form': {},
     })
 
@@ -201,14 +201,45 @@ def quiz_create(request):
 def quiz_edit(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, author=request.user)
     if request.method == 'POST':
-        # Same logic as create
         quiz.title = request.POST.get('title', quiz.title)
         quiz.description = request.POST.get('description', quiz.description)
         quiz.category = request.POST.get('category', quiz.category)
         quiz.difficulty = request.POST.get('difficulty', quiz.difficulty)
         quiz.time_limit = int(request.POST.get('time_limit', quiz.time_limit))
+        quiz.random_order = request.POST.get('random_order', 'false') == 'true'
         quiz.save()
-        messages.success(request, 'Quiz mis à jour !')
+
+        # Supprimer les anciennes questions et recréer depuis le formulaire
+        quiz.questions.all().delete()
+        import re
+        questions_data = {}
+        for key, values in request.POST.lists():
+            if key.startswith('questions['):
+                match = re.match(r'questions\[(\d+)\]\[(\w+)\](?:\[\])?', key)
+                if match:
+                    idx, field = match.group(1), match.group(2)
+                    if idx not in questions_data:
+                        questions_data[idx] = {'options': [], 'type': 'mcq'}
+                    if field == 'options':
+                        questions_data[idx]['options'].extend(values)
+                    else:
+                        questions_data[idx][field] = values[-1]
+
+        from .models import Question
+        for i, (idx, qdata) in enumerate(sorted(questions_data.items())):
+            if qdata.get('text', '').strip():
+                Question.objects.create(
+                    quiz=quiz,
+                    text=qdata.get('text', ''),
+                    type=qdata.get('type', 'mcq'),
+                    correct_answer=qdata.get('correct', ''),
+                    options=qdata.get('options', []),
+                    explanation=qdata.get('explanation', ''),
+                    points=int(qdata.get('points', 100) or 100),
+                    order=i,
+                )
+
+        messages.success(request, f'Quiz "{quiz.title}" mis à jour !')
         return redirect('quiz_list')
 
     existing_questions = json.dumps([q.to_json() for q in quiz.questions.all()])
@@ -216,6 +247,7 @@ def quiz_edit(request, quiz_id):
         'quiz': quiz,
         'existing_questions': existing_questions,
         'categories': Quiz.CATEGORY_CHOICES,
+        'action': 'Modifier',
     })
 
 
