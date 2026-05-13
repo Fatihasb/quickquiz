@@ -57,7 +57,7 @@ def quiz_list(request):
 
     categories = Quiz.CATEGORY_CHOICES
 
-    return render(request, 'quiz_list.html', {
+    return render(request, 'quiz/quiz_list.html', {
         'quizzes': page_obj,
         'page_obj': page_obj,
         'categories': [c[0] for c in categories],
@@ -94,7 +94,7 @@ def quiz_play(request, quiz_id):
         random.shuffle(questions)
 
     quiz_json = json.dumps([q.to_json() for q in questions])
-    return render(request, 'quiz_play.html', {
+    return render(request, 'quiz/quiz_play.html', {
         'quiz': quiz,
         'quiz_json': quiz_json,
         'total_questions': len(questions),
@@ -190,7 +190,7 @@ def quiz_create(request):
         messages.success(request, f'Quiz "{quiz.title}" créé avec succès !')
         return redirect('quiz_list')
 
-    return render(request, 'quiz_create.html', {
+    return render(request, 'quiz/quiz_create.html', {
         'categories': Quiz.CATEGORY_CHOICES,
         'form': {},
     })
@@ -225,7 +225,7 @@ def leaderboard(request):
         quiz_count=Count('user__results')
     )[:50]
 
-    return render(request, 'leaderboard.html', {'leaderboard': leaderboard_data})
+    return render(request, 'quiz/leaderboard.html', {'leaderboard': leaderboard_data})
 
 
 # ===== PROFILE =====
@@ -242,7 +242,7 @@ def profile(request):
         'best_score': profile.best_score,
     }
 
-    return render(request, 'profile.html', {
+    return render(request, 'quiz/profile.html', {
         'stats': stats,
         'history': history,
         'my_quizzes': my_quizzes,
